@@ -1,7 +1,7 @@
-import random
-
-from constant import room_card_set, game_schedule
-from util import ahead_one, backward_one, draw_card
+from constant import game_schedule
+from item_card import armor
+from room_card import room_card_set
+from util import ahead_one, backward_one, draw_card, user_input, dice
 
 
 class Role:
@@ -107,10 +107,12 @@ class Role:
 
     # 受伤骰点
     def hurt(self, type, n=1):
-        res = [random.randint(0, 2) for i in range(n)]
+        res = dice(role=self, n=n)
+        if type == '肉体' and armor in self.items:
+            res.append(-1)
         print('受到', res, '=', sum(res), '点的', type, '伤害')
         while True:
-            if sum(res) == 0:
+            if sum(res) <= 0:
                 break
             print("(身体伤害分配到【力量】与【速度】上|精神伤害分配到【意志】与【知识】上)")
             num1 = int(input("扣除第一属性: "))
@@ -157,64 +159,31 @@ class Role:
         return new_room
 
     # 对抗
-    def combat(self, ability, n=0):
+    def combat(self, ability='力量', n=0):
         num = self.get(ability=ability) + n
         # 最多8个骰子
         if num >= 8:
             num = 8
-        res = [random.randint(0, 2) for i in range(num)]
+        res = dice(role=self, n=num)
         return res
 
     # 能力挑战
-    def ability_challenge(self, ability, goal=0):
-        print('以', ability, '进行能力挑战，目标为：', goal)
-        reasult = [random.randint(0, 2) for i in range(int(self.get(ability)))]
-        print('结果为：', reasult)
-        if sum(reasult) >= goal:
-            return True
-        else:
-            return False
-
-    # 经过房间
-    def passaway(self, room):
-        if room.event is None:
-            return
-        if room.event.trigger == 3 and room.event.force:
-            print(room.event.detail)
-            room.event.do(role=self)
-
-    # 离开房间
-    def leave(self, room):
-        if room.event is None:
-            return
-        if room.event.trigger == 2 and room.event.force:
-            print(room.event.detail)
-            room.event.do(role=self)
-
-    # 互动房间
-    def use(self, room):
-        if room.event is None:
-            return
-        if room.event.trigger == 1 and room.event.force == False:
-            print(room.event.detail)
-            room.event.do(role=self)
-
-    # 进入房间
-    def into(self, room):
-        if room.event is None and room.item_type is None:
-            return
-
-        if room.event.trigger == 0 and room.event.force:
-            print(room.event.detail)
-            room.event.do(role=self)
-
-    # 停留房间
-    def stay(self, room):
-        if room.event is None:
-            return
-        if room.event.trigger == 1 and room.event.force:
-            print(room.event.detail)
-            room.event.do(role=self)
+    def ability_challenge(self, ability, n=0, type='room'):
+        if type == 'event' and "蜡烛" in self.buff:
+            n += 1
+        if "天使的羽毛（生效中）" in self.buff:
+            self.buff.remove("天使的羽毛（生效中）")
+            res = [int(user_input())]
+            return res
+        num = self.get(ability=ability) + n
+        # 最多8个骰子
+        if num >= 8:
+            num = 8
+        res = dice(role=self, n=num)
+        if "肾上腺素（生效中）" in self.buff:
+            self.buff.remove("肾上腺素（生效中）")
+            res.append(4)
+        return res
 
 
 class Map:
@@ -222,33 +191,43 @@ class Map:
         self.floor = floor
         self.map = [[None, None, None, None, None] for i in range(5)]
         if floor == 0:
-            self.map[2][2] = HouseCard(name='下台阶', door=[1, 1, 1, 1], window=[0, 0, 0, 0],
+            self.map[2][2] = HouseCard(name='下台阶',
+                                       door=[1, 1, 1, 1],
+                                       window=[0, 0, 0, 0],
                                        card_img=None,
-                                       event=None,
                                        item_type=None,
-                                       floor=0, sign=None)
+                                       floor=0,
+                                       describtion=None)
         elif floor == 2:
-            self.map[2][2] = HouseCard(name='上台阶', door=[1, 1, 1, 1], window=[0, 0, 0, 0],
+            self.map[2][2] = HouseCard(name='上台阶',
+                                       door=[1, 1, 1, 1],
+                                       window=[0, 0, 0, 0],
                                        card_img=None,
-                                       event=None,
                                        item_type=None,
-                                       floor=2, sign=None)
+                                       floor=2,
+                                       describtion=None)
         else:
-            self.map[2][2] = HouseCard(name='大厅楼梯间', door=[0, 0, 1, 0], window=[0, 0, 0, 2],
+            self.map[2][2] = HouseCard(name='大厅楼梯间',
+                                       door=[0, 0, 1, 0],
+                                       window=[0, 0, 0, 2],
                                        card_img=None,
-                                       event=None,
                                        item_type=None,
-                                       floor=1, sign=None)
-            self.map[2][3] = HouseCard(name='大厅02', door=[1, 1, 1, 1], window=[0, 0, 0, 0],
+                                       floor=1,
+                                       describtion=None)
+            self.map[2][3] = HouseCard(name='大厅02',
+                                       door=[1, 1, 1, 1],
+                                       window=[0, 0, 0, 0],
                                        card_img=None,
-                                       event=None,
                                        item_type=None,
-                                       floor=1, sign=None)
-            self.map[2][4] = HouseCard(name='大厅01', door=[1, 1, 0, 1], window=[0, 0, 0, 0],
+                                       floor=1,
+                                       describtion=None)
+            self.map[2][4] = HouseCard(name='大厅01',
+                                       door=[1, 1, 0, 1],
+                                       window=[0, 0, 0, 0],
                                        card_img=None,
-                                       event=None,
                                        item_type=None,
-                                       floor=1, sign=None)
+                                       floor=1,
+                                       describtion=None)
             self.floor = 1
 
 
@@ -271,6 +250,7 @@ class HouseCard:
         self.item_type = item_type
         self.floor = floor
         self.sign = sign
+        self.role = []
         self.enemy = []
         self.links = []
         self.items = []
@@ -311,7 +291,8 @@ class HouseCard:
 
 
 class Item:
-    def __init__(self, card_img):
+    def __init__(self, name, card_img):
+        self.name = name
         self.card_img = card_img
         self.owner = None
 
@@ -324,6 +305,7 @@ class Item:
 
     # 获得
     def get(self):
+        self.owner.buff.append(self.name)
         pass
 
     # 持有
@@ -341,6 +323,7 @@ class Item:
 
     # 失去
     def lost(self):
+        self.owner.buff.remove(self.name)
         self.owner = None
         pass
 

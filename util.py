@@ -1,10 +1,15 @@
+import json
 import random
+
+from item_card import luck_stone, rabbit_foot, item_card_set
+
+
+# 玩家输入
+def user_input(*args, **kwargs):
+    pass
 
 
 # 顺时针旋转
-from constant import card_set
-
-
 def ahead_one(l):
     x = l.pop(len(l) - 1)
     l.insert(0, x)
@@ -16,7 +21,6 @@ def backward_one(l):
     x = l.pop(0)
     l.append(x)
     return l
-
 
 
 # 设置房间卡
@@ -50,10 +54,31 @@ def set_room(role, new_room, direction, rotate, map):
         return True
 
 
+# 骰点
+def dice(role, min=0, max=2, n=1):
+    res = [random.randint(min, max) for i in range(n)]
+    # 幸运石判断
+    if luck_stone in role.items:
+        choose = bool(user_input())
+        if choose:
+            role.items.remove(luck_stone)
+            index = json.load(user_input())
+            for i in index:
+                res[i] = random.randint(0, 2)
+    # 幸运兔脚判断
+    if rabbit_foot in role.items:
+        choose = bool(user_input())
+        if choose:
+            index = int(user_input())
+            res[index] = random.randint(0, 2)
+
+
 # 行动
-def action(role, act, room_set, map, direction=None):
+def action(role, act, room_set, map, first=False, direction=None):
     room = map[role.x][role.y]
-    if act.startswith("移动"):
+    if act.startswith("移动") :
+        if role.move <= 0 and first:
+            role.move = 1
         if role.move <= 0:
             print('行动力不足')
             return
@@ -85,7 +110,7 @@ def action(role, act, room_set, map, direction=None):
                 role.into(next_room)
             else:
                 print('你打开了一扇通向未知区域的门')
-                next_room = explore(role, room_set)
+                next_room = role.explore(room_set)
                 return next_room
     elif act == "互动":
         role.use(room)
@@ -96,9 +121,39 @@ def action(role, act, room_set, map, direction=None):
         role.recover()
 
 
+# 挑战
+def challenge(role, ability, goal=0):
+    res = role.ability_challenge(ability=ability)
+
+
+# 偷窃
+def steal(winner, loser, item):
+    if winner.floor == loser.floor and winner.x == loser.x and winner.y == loser.y and item in loser.items:
+        item.lose()
+        item.set_owner(winner)
+        return True
+    else:
+        return False
+
+
+# 袭击
+def attack(attacker, retaliator, arms=None):
+    if arms is not None and arms not in attacker.items:
+        return
+    if arms is None:
+        a = attacker.combat()
+    else:
+        a = arms.use()
+    b = retaliator.combat()
+    res_a = sum(a)
+    res_b = sum(b)
+    if res_a > res_b:
+        return True
+    else:
+        return False
 
 
 # 抽卡
 def draw_card(type):
-    s = card_set.get(type)
+    s = item_card_set.get(type)
     return s.pop()
