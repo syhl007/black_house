@@ -1,5 +1,6 @@
 from constant import game_schedule
 from item_card import armor
+from omen_card import skull
 from room_card import room_card_set
 from util import ahead_one, backward_one, draw_card, user_input, dice
 
@@ -108,6 +109,10 @@ class Role:
     # 受伤骰点
     def hurt(self, type, n=1):
         res = dice(role=self, n=n)
+        if type == '精神' and skull in self.omens:
+            if bool(user_input()):
+                type = '肉体'
+        # 铠甲判断
         if type == '肉体' and armor in self.items:
             res.append(-1)
         print('受到', res, '=', sum(res), '点的', type, '伤害')
@@ -164,7 +169,7 @@ class Role:
         # 最多8个骰子
         if num >= 8:
             num = 8
-        res = dice(role=self, n=num)
+        res = {'ability':ability, 'result':dice(role=self, n=num)}
         return res
 
     # 能力挑战

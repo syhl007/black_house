@@ -144,9 +144,10 @@ def attack(attacker, retaliator, arms=None):
         a = attacker.combat()
     else:
         a = arms.use()
-    b = retaliator.combat()
-    res_a = sum(a)
-    res_b = sum(b)
+    ability = a.get('ability')
+    b = retaliator.combat(ability=ability)
+    res_a = sum(a.get('result'))
+    res_b = sum(b.get('result'))
     if res_a > res_b:
         return True
     else:
