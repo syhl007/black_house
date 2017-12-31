@@ -16,7 +16,7 @@ class BloodSword(Item):
     def use(self):
         super(BloodSword, self).use()
         self.owner.reduce(ability='速度')
-        self.owner.combat(ability='力量', n=3)
+        self.owner.attack(ability='力量', n=3)
 
     def set_owner(self, owner):
         if owner is None:
@@ -198,7 +198,7 @@ class Axe(Item):
 
     def use(self):
         super(Axe, self).use()
-        self.owner.combat(ability='力量', n=1)
+        self.owner.attack(ability='力量', n=1)
 
 
 axe = Axe()
@@ -253,7 +253,7 @@ class Gun(Item):
         super(Gun, self).__init__(name="左轮手枪", card_img=None)
 
     def use(self):
-        self.owner.combat(ability='速度', n=1)
+        self.owner.attack(ability='速度', n=1)
 
 
 gun = Gun()
