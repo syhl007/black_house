@@ -104,16 +104,16 @@ class Role:
     # 行动力复原
     def rest(self):
         print('行动力回复了')
-        self.move = self.speed
+        self.move = self.get(ability='速度')
 
     # 受伤骰点
     def hurt(self, type, n=1):
         res = dice(role=self, n=n)
-        if type == '精神' and skull in self.omens:
+        if type == '精神' and '颅骨' in self.buff:
             if bool(user_input()):
                 type = '肉体'
         # 铠甲判断
-        if type == '肉体' and armor in self.items:
+        if type == '肉体' and '铠甲' in self.buff:
             res.append(-1)
         print('受到', res, '=', sum(res), '点的', type, '伤害')
         while True:
@@ -174,10 +174,10 @@ class Role:
 
     # 能力挑战
     def ability_challenge(self, ability, n=0, type='room'):
-        if type == 'event' and "蜡烛" in self.buff:
+        if type == 'event' and '蜡烛' in self.buff:
             n += 1
-        if "天使的羽毛（生效中）" in self.buff:
-            self.buff.remove("天使的羽毛（生效中）")
+        if '天使的羽毛（生效中）' in self.buff:
+            self.buff.remove('天使的羽毛（生效中）')
             res = [int(user_input())]
             return res
         num = self.get(ability=ability) + n
@@ -185,8 +185,8 @@ class Role:
         if num >= 8:
             num = 8
         res = dice(role=self, n=num)
-        if "肾上腺素（生效中）" in self.buff:
-            self.buff.remove("肾上腺素（生效中）")
+        if '肾上腺素（生效中）' in self.buff:
+            self.buff.remove('肾上腺素（生效中）')
             res.append(4)
         return res
 
