@@ -1,12 +1,15 @@
 import json
 import random
 
-from item_card import luck_stone, rabbit_foot, item_card_set
+from constant import game_map, item_card_set
 
 
 # 玩家输入
+from omen_card import omen_card_set
+
+
 def user_input(*args, **kwargs):
-    pass
+    return input("请输入：")
 
 
 # 顺时针旋转
@@ -25,58 +28,13 @@ def backward_one(l):
 
 # 设置房间卡
 def set_room(role, new_room, direction, rotate, map):
-    room = map[role.x][role.y]
-    for i in range(rotate):
-        new_room.rotate_room()
-    d = [2, 3, 0, 1][direction]
-    if new_room.door[d] == 0:
-        return False
-    else:
-        x = role.x
-        y = role.y
-        if direction == 0:
-            y = role.y - 1
-        elif direction == 1:
-            x = role.x + 1
-        elif direction == 2:
-            y = role.y + 1
-        elif direction == 3:
-            x = role.x - 1
-        try:
-            map[x][y] = new_room
-        except:
-            print('设置失败')
-            raise Exception()
-        role.x = x
-        role.y = y
-        role.leave(room)
-        role.into(new_room)
-        return True
-
-
-# 骰点
-def dice(role, min=0, max=2, n=1):
-    res = [random.randint(min, max) for i in range(n)]
-    # 幸运石判断
-    if luck_stone in role.items:
-        choose = bool(user_input())
-        if choose:
-            role.items.remove(luck_stone)
-            index = json.load(user_input())
-            for i in index:
-                res[i] = random.randint(0, 2)
-    # 幸运兔脚判断
-    if rabbit_foot in role.items:
-        choose = bool(user_input())
-        if choose:
-            index = int(user_input())
-            res[index] = random.randint(0, 2)
+    pass
 
 
 # 行动
 def action(role, act, room_set, map, first=False, direction=None):
     room = map[role.x][role.y]
-    if act.startswith("移动") :
+    if act.startswith("移动"):
         if role.move <= 0 and first:
             role.move = 1
         if role.move <= 0:
@@ -156,5 +114,32 @@ def attack(attacker, retaliator, arms=None):
 
 # 抽卡
 def draw_card(type):
-    s = item_card_set.get(type)
+    if type == '物品':
+        s = item_card_set
+    elif type == '预兆':
+        s = omen_card_set
+    elif type == '事件':
+        s = item_card_set
+    else:
+        s = item_card_set
     return s.pop()
+
+
+# 遍历地图版
+def room_search(name=None, sign=None, floor=None):
+    room_list = []
+    if floor is None:
+        floor = range(3)
+    else:
+        floor = [floor]
+    for i in floor:
+        for x in range(len(game_map[i].map)):
+            for y in range(len(game_map[i].map[x])):
+                room = game_map[i].map[x][y]
+                if name is not None:
+                    if room.name == name:
+                        room_list.append({'x': x, 'y': y, 'floor': floor, 'room': room})
+                if sign is not None:
+                    if sign in room.sign:
+                        room_list.append({'x': x, 'y': y, 'floor': floor, 'room': room})
+    return room_list

@@ -1,42 +1,30 @@
-import constant
 from card import *
+from room_card import lobby_0
 from util import *
 
 
 class Main:
     def __init__(self):
-        self.event_dict = {}
-        self.role_list = []
-        self.map_init()
-        self.event_init()
-        self.room_init()
-
-    # 地图层初始化
-    def map_init(self):
-        self.map = [Map(floor=0), Map(floor=1), Map(floor=2)]
-        self.map[1].map[2][2].set_link(link=Link(start=self.map[1].map[2][2], end=self.map[0].map[2][2]))
-        self.map[0].map[2][2].set_link(link=Link(start=self.map[0].map[2][2], end=self.map[1].map[2][2]))
+        pass
 
     # 游戏开始
     def game(self):
-        test = Role(name='test', san=5, power=5, know=5, speed=2)
-        test.floor = 1
-        test.x = 2
-        test.y = 4
-        self.role_list.append(test)
+        bj = Role(name='Brandon Jaspers',
+                  san=5, san_strip=[0, 3, 3, 3, 4, 5, 6, 7, 8],
+                  power=5, power_strip=[0, 2, 3, 3, 4, 5, 6, 6, 7],
+                  know=5, know_strip=[0, 1, 3, 3, 5, 6, 6, 7],
+                  speed=2, speed_strip=[0, 3, 4, 4, 4, 5, 6, 7, 8])
+        bj.room=lobby_0
         while True:
-            for r in self.role_list:
-                direction = None
-                string = input("输入行动: ")
-                if string == "移动-经过":
-                    direction = int(input("决定方向: "))
-                new_room = action(role=r, act=string, direction=direction, room_set=self.room_set, map=self.map[r.floor].map)
-                if new_room is not None and isinstance(new_room, HouseCard):
-                    print('新房间是：', new_room.name)
-                    while True:
-                        rotate = int(input("旋转房间卡完成放置: "))
-                        if set_room(role=r, new_room=new_room, direction=1, rotate=rotate, map=self.map[r.floor].map):
-                            break
+            if bj.move_bar >= 0:
+                print("请选择行动：1、移动|2、休息")
+            else:
+                print("请选择行动：2、休息")
+            inp = user_input()
+            if int(inp) == 1:
+                print("方向：0-↑|1-→|2-↓|3-←")
+                bj.move(direction=int(user_input()))
+
 
 
 m = Main()

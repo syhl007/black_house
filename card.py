@@ -1,6 +1,18 @@
-from constant import game_schedule, game_map
-from room_card import room_card_set
-from util import ahead_one, backward_one, draw_card, user_input, dice
+import json
+import random
+
+from constant import room_card_set, game_map
+from util import user_input
+
+# 游戏进度
+game_schedule = 0
+
+
+class Map:
+    def __init__(self, floor):
+        self.floor = floor
+        self.map = [[None, None, None, None, None] for i in range(5)]
+
 
 # 角色
 class Role:
@@ -22,17 +34,36 @@ class Role:
         self.max_know = know
         self.know_strip = know_strip
         self.extra_know = 0
-        self.move = speed
-        self.x = 0
-        self.y = 0
-        self.room = None
+        self.move_bar = speed
+        self.x = 2
+        self.y = 4
         self.floor = 1
+        self.room = None
         self.buff = []
         self.items = []
         self.events = []
         self.omens = []
         self.camp = 0
         self.goal = '失忆中....'
+
+    # 骰点
+    def dice(self, min=0, max=2, n=1):
+        res = [random.randint(min, max) for i in range(n)]
+        # 幸运石判断
+        if "幸运石" in self.buff:
+            choose = bool(user_input())
+            if choose:
+                self.buff.remove("幸运石")
+                index = json.load(user_input())
+                for i in index:
+                    res[i] = random.randint(0, 2)
+        # 幸运兔脚判断
+        if "幸运兔脚" in self.buff:
+            choose = bool(user_input())
+            if choose:
+                index = int(user_input())
+                res[index] = random.randint(0, 2)
+        return res
 
     # 获取属性
     def get(self, ability):
@@ -125,12 +156,12 @@ class Role:
     # 行动力复原
     def rest(self):
         print('行动力回复了')
-        self.move = self.get(ability='速度')
+        self.move_bar = self.get(ability='速度')
 
     # 受伤骰点
     def hurt(self, type, n=1, value=None):
         if value is None:
-            res = dice(role=self, n=n)
+            res = self.dice(n=n)
         else:
             res = [value]
         if type == '精神' and '颅骨' in self.buff:
@@ -180,33 +211,34 @@ class Role:
                 self.know = 1
 
     # 移动
-    def move(self, position, first=False):
+    def move(self, direction, first=False):
         enemy = len([x for x in self.room.creatures if x.camp != self.camp])
-        self.move -= enemy
-        if not first and self.move <= 0:
+        self.move_bar -= enemy
+        if not first and self.move_bar <= 0:
             return
-        if self.room.door[position] == 1:
-            if position == 0:
+        if self.room.door[direction] == 1:
+            if direction == 0:
                 self.y -= 1
-            elif position == 1:
+            elif direction == 1:
                 self.x += 1
-            elif position == 2:
+            elif direction == 2:
                 self.y += 1
-            elif position == 3:
+            elif direction == 3:
                 self.x -= 1
-            else:
-                raise Exception()
             new_room = game_map[self.floor].map[self.x][self.y]
             if new_room == None:
-                new_room = self.explore()
+                new_room = self.explore(direction)
                 game_map[self.floor].map[self.x][self.y] = new_room
+            new_room.into(role=self, direction=direction)
 
     # 探险
-    def explore(self):
+    def explore(self, direction):
         new_room = room_card_set.pop()
         while new_room.floor[self.floor] == 0:
             room_card_set.add(new_room)
             new_room = room_card_set.pop()
+        while new_room.door[[2, 3, 1, 0][direction]] == 0:
+            new_room.rotate()
         return new_room
 
     # 袭击
@@ -218,7 +250,7 @@ class Role:
             # 最多8个骰子
             if num >= 8:
                 num = 8
-            res1 = {'ability': ability, 'result': dice(role=self, n=num)}
+            res1 = {'ability': ability, 'result': self.dice(n=num)}
             print("[进攻]", res1)
             if target.get(ability=ability) is None:
                 raise Exception()
@@ -243,7 +275,7 @@ class Role:
 
     # 反击
     def counter(self, ability='力量'):
-        res = {'ability': ability, 'result': dice(role=self, n=self.get(ability=ability))}
+        res = {'ability': ability, 'result': self.dice(n=self.get(ability=ability))}
         return res
 
     # 偷窃列表
@@ -274,7 +306,7 @@ class Role:
         # 最多8个骰子
         if num >= 8:
             num = 8
-        res = dice(role=self, n=num)
+        res = self.dice(n=num)
         if '肾上腺素（生效中）' in self.buff:
             self.buff.remove('肾上腺素（生效中）')
             res.append(4)
@@ -285,153 +317,3 @@ class Role:
         self.room.items += self.items
         self.room.otems += self.omens
         self.events = []
-
-
-# 游戏地图
-class Map:
-    def __init__(self, floor):
-        self.floor = floor
-        self.map = [[None, None, None, None, None] for i in range(5)]
-        if floor == 0:
-            self.map[2][2] = HouseCard(name='下台阶',
-                                       door=[1, 1, 1, 1],
-                                       window=[0, 0, 0, 0],
-                                       card_img=None,
-                                       item_type=None,
-                                       floor=0,
-                                       describtion=None)
-        elif floor == 2:
-            self.map[2][2] = HouseCard(name='上台阶',
-                                       door=[1, 1, 1, 1],
-                                       window=[0, 0, 0, 0],
-                                       card_img=None,
-                                       item_type=None,
-                                       floor=2,
-                                       describtion=None)
-        else:
-            self.map[2][2] = HouseCard(name='大厅楼梯间',
-                                       door=[0, 0, 1, 0],
-                                       window=[0, 0, 0, 2],
-                                       card_img=None,
-                                       item_type=None,
-                                       floor=1,
-                                       describtion=None)
-            self.map[2][3] = HouseCard(name='大厅02',
-                                       door=[1, 1, 1, 1],
-                                       window=[0, 0, 0, 0],
-                                       card_img=None,
-                                       item_type=None,
-                                       floor=1,
-                                       describtion=None)
-            self.map[2][4] = HouseCard(name='大厅01',
-                                       door=[1, 1, 0, 1],
-                                       window=[0, 0, 0, 0],
-                                       card_img=None,
-                                       item_type=None,
-                                       floor=1,
-                                       describtion=None)
-            self.floor = 1
-
-
-# 额外路径
-class Link:
-    def __init__(self, start, end, one_way=False, flag=True, times=-1):
-        self.start = start
-        self.end = end
-        self.one_way = one_way
-        self.flag = flag
-        self.times = times
-
-
-# 房间
-class HouseCard:
-    def __init__(self, name, door, window, card_img, describtion, item_type, floor, sign=None):
-        self.name = name
-        self.door = door
-        self.window = window
-        self.card_img = card_img
-        self.describtion = describtion
-        self.item_type = item_type
-        self.floor = floor
-        self.sign = sign
-        self.role = []
-        self.creatures = []
-        self.omens = []
-        self.items = []
-
-    def rotate_room(self, type=1):
-        if type == 1:
-            self.door = ahead_one(self.door)
-            self.window = ahead_one(self.window)
-        else:
-            self.door = backward_one(self.door)
-            self.window = backward_one(self.window)
-
-    def set_link(self, link):
-        self.links.append(link)
-
-    def into(self, role):
-        if self.item_type is not None:
-            if self.item_type == '事件':
-                role.events.append(draw_card(self.item_type))
-            elif self.item_type == '预兆':
-                role.omens.append(draw_card(self.item_type))
-            elif self.item_type == '物品':
-                role.items.append(draw_card(self.item_type))
-            self.item_type = None
-        pass
-
-    def stay(self, role):
-        pass
-
-    def leave(self, role):
-        pass
-
-    def passaway(self, role):
-        pass
-
-    def use(self, role):
-        pass
-
-
-# 道具、预兆
-class Item:
-    def __init__(self, name, card_img, is_use=True, is_steal=True, is_discard=True, is_give=True):
-        self.name = name
-        self.card_img = card_img
-        self.owner = None
-        self.is_use = is_use
-        self.is_steal = is_steal
-        self.is_discard = is_discard
-        self.is_give = is_give
-
-    # 转交/获得
-    def set_owner(self, owner):
-        if self.owner is not None:
-            self.lost()
-        self.owner = owner
-        self.get()
-
-    # 获得
-    def get(self):
-        self.owner.buff.append(self.name)
-        pass
-
-    # 持有
-    def own(self):
-        pass
-
-    # 使用
-    def use(self):
-        pass
-
-    # 丢弃
-    def discard(self):
-        self.lost()
-        pass
-
-    # 失去
-    def lost(self):
-        self.owner.buff.remove(self.name)
-        self.owner = None
-        pass

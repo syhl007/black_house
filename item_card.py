@@ -1,9 +1,48 @@
-from card import Item
+from constant import game_map, item_card_set
 
-from constant import game_map
 
-# 物品卡堆
-item_card_set = []
+# 道具
+class Item:
+    def __init__(self, name, card_img, is_use=True, is_steal=True, is_discard=True, is_give=True):
+        self.name = name
+        self.card_img = card_img
+        self.owner = None
+        self.is_use = is_use
+        self.is_steal = is_steal
+        self.is_discard = is_discard
+        self.is_give = is_give
+
+    # 转交/获得
+    def set_owner(self, owner):
+        if self.owner is not None:
+            self.lost()
+        self.owner = owner
+        self.get()
+
+    # 获得
+    def get(self):
+        self.owner.buff.append(self.name)
+        pass
+
+    # 持有
+    def own(self):
+        pass
+
+    # 使用
+    def use(self):
+        pass
+
+    # 丢弃
+    def discard(self):
+        self.lost()
+        pass
+
+    # 失去
+    def lost(self):
+        self.owner.buff.remove(self.name)
+        self.owner = None
+        pass
+
 
 # ------------------------------------血剑------------------------------------
 from util import challenge
@@ -35,6 +74,7 @@ class BloodSword(Item):
 blood_sword = BloodSword()
 item_card_set.append(blood_sword)
 
+
 # -------------------------------年代久远的护符------------------------------------
 class Talisman(Item):
     def __init__(self):
@@ -57,6 +97,7 @@ class Talisman(Item):
 
 talisman = Talisman()
 item_card_set.append(talisman)
+
 
 # -------------------------------督伊德教的小首饰------------------------------------
 class Jewellery(Item):
@@ -81,6 +122,7 @@ class Jewellery(Item):
 jewellery = Jewellery()
 item_card_set.append(jewellery)
 
+
 # -------------------------------治疗药膏------------------------------------
 class Ointment(Item):
     def __init__(self):
@@ -93,6 +135,7 @@ class Ointment(Item):
 
 ointment = Ointment()
 item_card_set.append(ointment)
+
 
 # -------------------------------绳索------------------------------------
 class Rope(Item):
@@ -107,6 +150,7 @@ class Rope(Item):
 rope = Rope()
 item_card_set.append(rope)
 
+
 # -------------------------------蜡烛-------------------------------------
 class Candle(Item):
     def __init__(self):
@@ -118,6 +162,7 @@ class Candle(Item):
 
 candle = Candle()
 item_card_set.append(candle)
+
 
 # -------------------------------肾上腺素-------------------------------------
 class Adrenaline(Item):
@@ -132,6 +177,7 @@ class Adrenaline(Item):
 adrenaline = Adrenaline()
 item_card_set.append(adrenaline)
 
+
 # -------------------------------天使的羽毛-------------------------------------
 class Feather(Item):
     def __init__(self):
@@ -145,6 +191,7 @@ class Feather(Item):
 feather = Feather()
 item_card_set.append(feather)
 
+
 # -------------------------------炸药-------------------------------------
 class Explosive(Item):
     def __init__(self):
@@ -157,6 +204,7 @@ class Explosive(Item):
 explosive = Explosive()
 item_card_set.append(explosive)
 
+
 # -------------------------------幸运石-------------------------------------
 class LuckStone(Item):
     def __init__(self):
@@ -168,6 +216,7 @@ class LuckStone(Item):
 
 luck_stone = LuckStone()
 item_card_set.append(luck_stone)
+
 
 # -------------------------------玩具猴-------------------------------------
 class Monkey(Item):
@@ -191,6 +240,7 @@ class Monkey(Item):
 monkey = Monkey()
 item_card_set.append(monkey)
 
+
 # -------------------------------手斧-------------------------------------
 class Axe(Item):
     def __init__(self):
@@ -203,6 +253,7 @@ class Axe(Item):
 
 axe = Axe()
 item_card_set.append(axe)
+
 
 # -------------------------------铠甲-------------------------------------
 class Armor(Item):
@@ -223,6 +274,7 @@ class Armor(Item):
 armor = Armor()
 item_card_set.append(armor)
 
+
 # -------------------------------幸运兔脚-------------------------------------
 class RabbitFoot(Item):
     def __init__(self):
@@ -231,6 +283,7 @@ class RabbitFoot(Item):
 
 rabbit_foot = RabbitFoot()
 item_card_set.append(rabbit_foot)
+
 
 # -------------------------------魔术盒子-------------------------------------
 class MagicBox(Item):
@@ -246,6 +299,7 @@ class MagicBox(Item):
 
 magic_box = MagicBox()
 item_card_set.append(magic_box)
+
 
 # -------------------------------左轮手枪-------------------------------------
 class Gun(Item):
