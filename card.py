@@ -295,8 +295,8 @@ class Role:
         return [x for x in self.items if x.is_use] + [x for x in self.items if x.is_use]
 
     # 能力挑战
-    def ability_challenge(self, ability, n=0, type='room'):
-        if type == 'event' and '蜡烛' in self.buff:
+    def ability_challenge(self, ability, n=0, type='房间'):
+        if type == '事件' and '蜡烛' in self.buff:
             n += 1
         if '天使的羽毛（生效中）' in self.buff:
             self.buff.remove('天使的羽毛（生效中）')

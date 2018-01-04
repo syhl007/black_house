@@ -2,7 +2,8 @@ import random
 
 from constant import omen_card_set
 
-# 道具
+
+# 预兆
 class Omen:
     def __init__(self, name, card_img, is_use=True, is_steal=True, is_discard=True, is_give=True):
         self.name = name

@@ -6,7 +6,8 @@ room_card_set = []
 item_card_set = []
 # 预兆卡堆
 omen_card_set = []
-
+# 人物列表
+role_list = []
 
 
 

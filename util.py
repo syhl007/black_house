@@ -126,7 +126,7 @@ def draw_card(type):
 
 
 # 遍历地图版
-def room_search(name=None, sign=None, floor=None):
+def room_search(names=None, sign=None, floor=None):
     room_list = []
     if floor is None:
         floor = range(3)
@@ -136,8 +136,8 @@ def room_search(name=None, sign=None, floor=None):
         for x in range(len(game_map[i].map)):
             for y in range(len(game_map[i].map[x])):
                 room = game_map[i].map[x][y]
-                if name is not None:
-                    if room.name == name:
+                if names is not None:
+                    if room.name in names:
                         room_list.append({'x': x, 'y': y, 'floor': floor, 'room': room})
                 if sign is not None:
                     if sign in room.sign:

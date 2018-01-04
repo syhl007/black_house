@@ -29,6 +29,7 @@ class HouseCard:
             self.window = backward_one(self.window)
 
     def into(self, role, direction=None):
+        role.room = self
         self.creatures.append(role)
         if self.item_type is not None:
             if self.item_type == '事件':
@@ -43,6 +44,7 @@ class HouseCard:
         pass
 
     def leave(self, role):
+        role.room = None
         self.creatures.remove(role)
 
     def use(self, role):
