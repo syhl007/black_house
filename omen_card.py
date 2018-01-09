@@ -65,10 +65,6 @@ class Dog(Omen):
         super(Dog, self).use()
 
 
-dog = Dog()
-omen_card_set.append(dog)
-
-
 # -------------------------------疯汉-------------------------------------
 class Crazy(Omen):
     def __init__(self):
@@ -85,10 +81,6 @@ class Crazy(Omen):
         super(Crazy, self).lost()
 
 
-crazy = Crazy()
-omen_card_set.append(crazy)
-
-
 # -------------------------------书本-------------------------------------
 class Book(Omen):
     def __init__(self):
@@ -103,18 +95,10 @@ class Book(Omen):
         super(Book, self).lost()
 
 
-book = Book()
-omen_card_set.append(book)
-
-
 # -------------------------------徽章-------------------------------------
 class Badge(Omen):
     def __init__(self):
         super(Badge, self).__init__(name="徽章", card_img=None)
-
-
-badge = Badge()
-omen_card_set.append(badge)
 
 
 # -------------------------------圣符-------------------------------------
@@ -131,10 +115,6 @@ class Rune(Omen):
         super(Rune, self).lost()
 
 
-rune = Rune()
-omen_card_set.append(rune)
-
-
 # -------------------------------指环-------------------------------------
 class Ring(Omen):
     def __init__(self):
@@ -144,18 +124,10 @@ class Ring(Omen):
         self.owner.combat(ability='意志', n=0)
 
 
-ring = Ring()
-omen_card_set.append(ring)
-
-
 # -------------------------------颅骨-------------------------------------
 class Skull(Omen):
     def __init__(self):
         super(Skull, self).__init__(name="颅骨", card_img=None)
-
-
-skull = Skull()
-omen_card_set.append(skull)
 
 
 # -------------------------------噬咬-------------------------------------
@@ -173,10 +145,6 @@ class Bite(Omen):
 
     def discard(self):
         pass
-
-
-bite = Bite()
-omen_card_set.append(bite)
 
 
 # -------------------------------面具-------------------------------------
@@ -197,28 +165,20 @@ class Mask(Omen):
                 self.owner.buff.remove("面具（生效中）")
 
 
-mask = Mask()
-omen_card_set.append(mask)
-
-
 # -------------------------------女孩-------------------------------------
-class Gril(Omen):
+class Girl(Omen):
     def __init__(self):
-        super(Gril, self).__init__(name="女孩", card_img=None)
+        super(Girl, self).__init__(name="女孩", card_img=None)
 
     def get(self):
-        super(Gril, self).get()
+        super(Girl, self).get()
         self.owner.promote(ability="知识")
         self.owner.promote(ability="意志")
 
     def lost(self):
         self.owner.reduce(ability="知识")
         self.owner.reduce(ability="意志")
-        super(Gril, self).lost()
-
-
-gril = Gril()
-omen_card_set.append(gril)
+        super(Girl, self).lost()
 
 
 # -------------------------------灵板-------------------------------------
@@ -230,10 +190,6 @@ class SpiritBoard(Omen):
         pass
 
 
-spirit_board = SpiritBoard()
-omen_card_set.append(spirit_board)
-
-
 # -------------------------------长矛-------------------------------------
 class Spear(Omen):
     def __init__(self):
@@ -241,10 +197,6 @@ class Spear(Omen):
 
     def use(self):
         self.owner.combat(ability='力量', n=2)
-
-
-spear = Spear()
-omen_card_set.append(spear)
 
 
 # -------------------------------水晶球-------------------------------------
@@ -256,8 +208,35 @@ class CrystalBall(Omen):
         pass
 
 
+# --------------------------------------------------------------
+dog = Dog()
+crazy = Crazy()
+book = Book()
+badge = Badge()
+rune = Rune()
+ring = Ring()
+skull = Skull()
+bite = Bite()
+mask = Mask()
+girl = Girl()
+spirit_board = SpiritBoard()
+spear = Spear()
 crystal_ball = CrystalBall()
-omen_card_set.append(crystal_ball)
 
-# 打乱
-random.shuffle(omen_card_set)
+
+def omen_init():
+    omen_card_set.append(dog)
+    omen_card_set.append(crazy)
+    omen_card_set.append(book)
+    omen_card_set.append(badge)
+    omen_card_set.append(rune)
+    omen_card_set.append(ring)
+    omen_card_set.append(skull)
+    omen_card_set.append(bite)
+    omen_card_set.append(mask)
+    omen_card_set.append(girl)
+    omen_card_set.append(spirit_board)
+    omen_card_set.append(spear)
+    omen_card_set.append(crystal_ball)
+    # 打乱
+    random.shuffle(omen_card_set)

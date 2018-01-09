@@ -1,8 +1,7 @@
 import json
 import random
 
-from constant import game_map, item_card_set
-
+from constant import game_map, item_card_set, event_card_set
 
 # 玩家输入
 from omen_card import omen_card_set
@@ -119,9 +118,9 @@ def draw_card(type):
     elif type == '预兆':
         s = omen_card_set
     elif type == '事件':
-        s = item_card_set
+        s = event_card_set
     else:
-        s = item_card_set
+        s = event_card_set
     return s.pop()
 
 
@@ -136,6 +135,8 @@ def room_search(names=None, sign=None, floor=None):
         for x in range(len(game_map[i].map)):
             for y in range(len(game_map[i].map[x])):
                 room = game_map[i].map[x][y]
+                if room is None:
+                    continue
                 if names is not None:
                     if room.name in names:
                         room_list.append({'x': x, 'y': y, 'floor': floor, 'room': room})
@@ -143,3 +144,25 @@ def room_search(names=None, sign=None, floor=None):
                     if sign in room.sign:
                         room_list.append({'x': x, 'y': y, 'floor': floor, 'room': room})
     return room_list
+
+
+# 地图版‘气’判断
+def live_map_cheak(floor=None):
+    count = 0
+    map = game_map[floor].map
+    for x in range(len(map)):
+        for y in range(len(map[x])):
+            room = map[x][y]
+            if room is None:
+                continue
+            for i in range(4):
+                if room.door[i] == 0:
+                    continue
+                try:
+                    next_room = map[x + [0, 1, 0, -1][i]][y + [-1, 0, 1, 0][i]]
+                except:
+                    continue
+                if next_room is None:
+                    count += 1
+    return count
+    pass

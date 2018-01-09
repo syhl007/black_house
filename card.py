@@ -2,7 +2,7 @@ import json
 import random
 
 from constant import room_card_set, game_map
-from util import user_input
+from util import user_input, live_map_cheak
 
 # 游戏进度
 game_schedule = 0
@@ -11,7 +11,7 @@ game_schedule = 0
 class Map:
     def __init__(self, floor):
         self.floor = floor
-        self.map = [[None, None, None, None, None] for i in range(5)]
+        self.map = [[None for n in range(10)] for i in range(10)]
 
 
 # 角色
@@ -35,8 +35,8 @@ class Role:
         self.know_strip = know_strip
         self.extra_know = 0
         self.move_bar = speed
-        self.x = 2
-        self.y = 4
+        self.x = 4
+        self.y = 9
         self.floor = 1
         self.room = None
         self.buff = []
@@ -45,6 +45,7 @@ class Role:
         self.omens = []
         self.camp = 0
         self.goal = '失忆中....'
+        self.first_move = True
 
     # 骰点
     def dice(self, min=0, max=2, n=1):
@@ -153,10 +154,14 @@ class Role:
         else:
             pass
 
-    # 行动力复原
+    # 行动力复原（休息）
     def rest(self):
         print('行动力回复了')
+        if "灯灭" in self.buff:
+            self.move_bar = 1
+        self.first_move = True
         self.move_bar = self.get(ability='速度')
+        self.room.stay(self)
 
     # 受伤骰点
     def hurt(self, type, n=1, value=None):
@@ -211,33 +216,66 @@ class Role:
                 self.know = 1
 
     # 移动
-    def move(self, direction, first=False):
+    def move(self, direction):
+        if "丝网" in self.buff:
+            print("")
         enemy = len([x for x in self.room.creatures if x.camp != self.camp])
         self.move_bar -= enemy
-        if not first and self.move_bar <= 0:
+        if not self.first_move and self.move_bar <= 0:
+            print("行动力不足")
             return
         if self.room.door[direction] == 1:
             if direction == 0:
-                self.y -= 1
+                x = self.x
+                y = self.y - 1
             elif direction == 1:
-                self.x += 1
+                x = self.x + 1
+                y = self.y
             elif direction == 2:
-                self.y += 1
+                x = self.x
+                y = self.y + 1
             elif direction == 3:
-                self.x -= 1
-            new_room = game_map[self.floor].map[self.x][self.y]
-            if new_room == None:
-                new_room = self.explore(direction)
-                game_map[self.floor].map[self.x][self.y] = new_room
+                x = self.x - 1
+                y = self.y
+            else:
+                x = self.x
+                y = self.y
+            try:
+                new_room = game_map[self.floor].map[x][y]
+            except:
+                print("这扇门似乎和空间牢牢的固定在一起。")
+                return
+            if new_room is None:
+                while True:
+                    new_room = self.explore(direction)
+                    game_map[self.floor].map[x][y] = new_room
+                    if live_map_cheak(floor=self.floor) > 0:
+                        break
+                    else:
+                        room_card_set.append(new_room)
+                        random.shuffle(room_card_set)
+                        game_map[self.floor].map[x][y] = None
+                self.x = x
+                self.y = y
+                self.move_bar = 0
+            else:
+                if new_room.door[[2, 3, 0, 1][direction]] == 0:
+                    print("这扇门似乎和空间牢牢的固定在一起。")
+                    return
+                self.x = x
+                self.y = y
+                self.move_bar -= 1
+            self.first_move = False
+            self.room.leave(self)
             new_room.into(role=self, direction=direction)
 
     # 探险
     def explore(self, direction):
         new_room = room_card_set.pop()
         while new_room.floor[self.floor] == 0:
-            room_card_set.add(new_room)
+            room_card_set.append(new_room)
             new_room = room_card_set.pop()
-        while new_room.door[[2, 3, 1, 0][direction]] == 0:
+        while new_room.door[[2, 3, 0, 1][direction]] == 0:
             new_room.rotate()
         return new_room
 
@@ -310,6 +348,7 @@ class Role:
         if '肾上腺素（生效中）' in self.buff:
             self.buff.remove('肾上腺素（生效中）')
             res.append(4)
+        print(self.name, "[", ability, "]挑战结果为：", res)
         return res
 
     # 死亡

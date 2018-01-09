@@ -2,7 +2,7 @@ import random
 
 from card import Map
 from constant import room_card_set, game_map
-from util import draw_card, challenge, room_search, user_input, ahead_one, backward_one
+from util import draw_card, room_search, user_input, ahead_one, backward_one
 
 
 # 房间
@@ -15,6 +15,7 @@ class HouseCard:
         self.describtion = describtion
         self.item_type = item_type
         self.floor = floor
+        self.used = False
         self.sign = []
         self.creatures = []
         self.omens = []
@@ -29,16 +30,22 @@ class HouseCard:
             self.window = backward_one(self.window)
 
     def into(self, role, direction=None):
+        print(role.name, "进入了", self.name)
         role.room = self
         self.creatures.append(role)
-        if self.item_type is not None:
+        if self.item_type is not None and not self.used:
+            card = draw_card(self.item_type)
             if self.item_type == '事件':
-                role.events.append(draw_card(self.item_type))
+                print("事件:", card.name)
+                card.do(role=role)
+                role.events.append(card)
             elif self.item_type == '预兆':
-                role.omens.append(draw_card(self.item_type))
+                print(role.name, "找到了", card.name, "[预兆]")
+                role.omens.append(card)
             elif self.item_type == '物品':
-                role.items.append(draw_card(self.item_type))
-            self.item_type = None
+                print(role.name, "找到了", card.name, "[物品]")
+                role.items.append(card)
+            self.used = True
 
     def stay(self, role):
         pass
@@ -105,13 +112,14 @@ class Collapse(HouseCard):
                                        floor=[1, 1, 1],
                                        item_type=None,
                                        describtion=None)
+        self.force = True
 
     def into(self, role, direction=None):
         super(Collapse, self).into(role)
         print("第一个进入本房间的玩家必须以'速度'进行'能力考验'。若骰数大于或等于5，则人物无恙。否则翻开一张地下室卡，放到地下，玩家坠落至此，并需要骰1，点数为玩家'肉体伤害'")
         if self.force:
             print('当你一脚踏进这个房间时，显然没有注意到地板上的破洞.')
-            if challenge(role, ability='速度', goal=5):
+            if sum(role.ability_challenge(ability='速度')) >= 5:
                 print('但是你灵巧的稳住了身形，避免了掉落')
             else:
                 print('你一脚踩空，下落到地下室随机地点')
@@ -120,7 +128,7 @@ class Collapse(HouseCard):
                 role.x = random.randint(0, 4)
                 role.y = random.randint(0, 4)
                 if game_map[0].map[role.x][role.y] is None:
-                    new_room = role.explore()
+                    new_room = role.explore(direction=random.randint(0, 3))
                     game_map[0].map[role.x][role.y] = new_room
                 else:
                     new_room = game_map[0].map[role.x][role.y]
@@ -155,10 +163,6 @@ class Collapse(HouseCard):
             new_room.get('room').into(role)
 
 
-collapse = Collapse()
-room_card_set.append(collapse)
-
-
 # ------------------------------------煤导槽-----------------------------------
 class Chute(HouseCard):
     def __init__(self):
@@ -174,9 +178,10 @@ class Chute(HouseCard):
         super(Chute, self).use(role)
         print("这是一条单向通向'下台阶'的特殊通道")
         self.leave(role)
+        down_steps.into(role)
         role.floor = 0
-        role.x = 2
-        role.y = 2
+        role.x = 4
+        role.y = 4
 
     def stay(self, role):
         super(Chute, self).stay(role)
@@ -185,10 +190,6 @@ class Chute(HouseCard):
         role.floor = 0
         role.x = 2
         role.y = 2
-
-
-chute = Chute()
-room_card_set.append(chute)
 
 
 # ------------------------------------舞厅------------------------------------
@@ -202,10 +203,6 @@ class Ballroom(HouseCard):
                                        item_type='事件',
                                        describtion=None)
         self.sign.append("舞厅")
-
-
-ballroom = Ballroom()
-room_card_set.append(ballroom)
 
 
 # ------------------------------------破烂的房间-----------------------------------
@@ -222,16 +219,12 @@ class Broken(HouseCard):
     def leave(self, role):
         print("离开房间时，需要以'力量'进行'能力考验'，骰数大于3，则无恙；否则'速度'下降1级，无论成功与否，人物都能离开房间。")
         print('当你准备离开这个房间时，你发现这里乱成一团，你需要费大力气开辟一条路。')
-        if challenge(role, ability='力量', goal=3):
+        if sum(role.ability_challenge(ability="力量")) >= 3:
             print('这很轻松，你在杂物之间分开了一条路。')
         else:
             print('杂物似乎比你想象的重得多，你费了大力气才弄出一条路，为此还弄伤了你的脚（速度减1）')
             role.reduce(ability='速度')
         super(Broken, self).leave(role)
-
-
-broken = Broken()
-room_card_set.append(broken)
 
 
 # ------------------------------------酒窖------------------------------------
@@ -246,10 +239,6 @@ class Wine(HouseCard):
                                    describtion=None)
 
 
-wine = Wine()
-room_card_set.append(wine)
-
-
 # ------------------------------------储藏室------------------------------------
 class Store(HouseCard):
     def __init__(self):
@@ -260,10 +249,6 @@ class Store(HouseCard):
                                     floor=[1, 1, 1],
                                     item_type='物品',
                                     describtion=None)
-
-
-store = Store()
-room_card_set.append(store)
 
 
 # ------------------------------------保险库------------------------------------
@@ -282,7 +267,7 @@ class Vault(HouseCard):
     def use(self, role):
         if self.trigger == 1:
             print('你决定试试能否开启保险柜门。')
-            if challenge(role, ability='知识', goal=6):
+            if sum(role.ability_challenge(ability="知识")) >= 6:
                 print('易如反掌！')
                 role.items.append(draw_card(type='物品'))
                 role.items.append(draw_card(type='物品'))
@@ -290,10 +275,6 @@ class Vault(HouseCard):
                 self.trigger = 0
             else:
                 print('这太难了！')
-
-
-vault = Vault()
-room_card_set.append(vault)
 
 
 # ------------------------------------老朽的门廊------------------------------------
@@ -308,10 +289,6 @@ class OldPorch(HouseCard):
                                        describtion=None)
 
 
-old_porch = OldPorch()
-room_card_set.append(old_porch)
-
-
 # ------------------------------------风琴室------------------------------------
 class OrganRoom(HouseCard):
     def __init__(self):
@@ -322,10 +299,6 @@ class OrganRoom(HouseCard):
                                         floor=[1, 1, 1],
                                         item_type='事件',
                                         describtion=None)
-
-
-organ_room = OrganRoom()
-room_card_set.append(organ_room)
 
 
 # ------------------------------------研究室------------------------------------
@@ -340,10 +313,6 @@ class ResearchRoom(HouseCard):
                                            describtion=None)
 
 
-research_room = ResearchRoom()
-room_card_set.append(research_room)
-
-
 # ------------------------------------主人房------------------------------------
 class MasterBedRoom(HouseCard):
     def __init__(self):
@@ -356,10 +325,6 @@ class MasterBedRoom(HouseCard):
                                             describtion=None)
 
 
-master_bedroom = MasterBedRoom()
-room_card_set.append(master_bedroom)
-
-
 # ------------------------------------餐厅------------------------------------
 class Restaurant(HouseCard):
     def __init__(self):
@@ -370,10 +335,6 @@ class Restaurant(HouseCard):
                                          floor=[1, 1, 1],
                                          item_type='预兆',
                                          describtion=None)
-
-
-restaurant = Restaurant()
-room_card_set.append(restaurant)
 
 
 # ------------------------------------图书馆------------------------------------
@@ -397,10 +358,6 @@ class Libry(HouseCard):
             print('显然的，你的提升很有限。')
 
 
-libry = Libry()
-room_card_set.append(libry)
-
-
 # ------------------------------------雕塑长廊------------------------------------
 class Gallery(HouseCard):
     def __init__(self):
@@ -413,10 +370,6 @@ class Gallery(HouseCard):
                                       describtion=None)
 
 
-gallery = Gallery()
-room_card_set.append(gallery)
-
-
 # ------------------------------------厨房------------------------------------
 class Kitchen(HouseCard):
     def __init__(self):
@@ -427,10 +380,6 @@ class Kitchen(HouseCard):
                                       floor=[1, 1, 1],
                                       item_type='预兆',
                                       describtion=None)
-
-
-kitchen = Kitchen()
-room_card_set.append(kitchen)
 
 
 # ------------------------------------地窖------------------------------------
@@ -446,11 +395,7 @@ class Cellar(HouseCard):
 
     def stay(self, role):
         print("若在此停留，则受到1点精神伤害。")
-        role.hurt(type='精神')
-
-
-cellar = Cellar()
-room_card_set.append(cellar)
+        role.hurt(type='精神', value=1)
 
 
 # ------------------------------------阁楼------------------------------------
@@ -467,15 +412,11 @@ class Loft(HouseCard):
     def leave(self, role):
         print("离开房间时，需要以'速度'进行'能力考验'，骰数大于3，则无恙；否则'力量'下降1级，无论成功与否，人物都能离开房间。")
         print('当你准备离开这个房间时，你发现这里地板滋滋作响，或许需要一点灵活的技巧。')
-        if challenge(role, ability='速度', goal=3):
+        if sum(role.ability_challenge(ability="速度")) >= 3:
             print('这很轻松，你轻盈的踩在木板上离开了房间。')
         else:
             print('这对你来说有点吃力，你差点掉落下去，费力抱着木板才让你走回门口，这让你虚弱不少。')
             role.reduce(ability='力量')
-
-
-loft = Loft()
-room_card_set.append(loft)
 
 
 # ------------------------------------礼拜堂------------------------------------
@@ -499,10 +440,6 @@ class Church(HouseCard):
             print('显然的，同样的风景并没有给你更多感受。')
 
 
-church = Church()
-room_card_set.append(church)
-
-
 # ------------------------------------寝室------------------------------------
 class BedRoom(HouseCard):
     def __init__(self):
@@ -515,10 +452,6 @@ class BedRoom(HouseCard):
                                       describtion=None)
 
 
-bedroom = BedRoom()
-room_card_set.append(bedroom)
-
-
 # ------------------------------------露台------------------------------------
 class Terrace(HouseCard):
     def __init__(self):
@@ -529,10 +462,6 @@ class Terrace(HouseCard):
                                       floor=[1, 1, 1],
                                       item_type='预兆',
                                       describtion=None)
-
-
-terrace = Terrace()
-room_card_set.append(terrace)
 
 
 # ------------------------------------墓园------------------------------------
@@ -549,15 +478,11 @@ class Graveyard(HouseCard):
     def leave(self, role):
         print("离开房间时，需要以'意志'进行'能力考验'，骰数大于4，则无恙；否则'知识'下降1级，无论成功与否，人物都能离开房间。")
         print('这个地方太诡异了，你打算快点离开。')
-        if challenge(role, ability='意志', goal=3):
+        if sum(role.ability_challenge(ability="意志")) >= 3:
             print('对，什么也没有，什么也没发生，很好，很好。')
         else:
             print('什么也没有，等等，那是什么？不，我不想看，我要离开，不要追我，啊。')
             role.reduce(ability='知识')
-
-
-graveyard = Graveyard()
-room_card_set.append(graveyard)
 
 
 # ------------------------------------手术室------------------------------------
@@ -570,10 +495,6 @@ class OperationRoom(HouseCard):
                                             floor=[1, 1, 1],
                                             item_type='事件',
                                             describtion=None)
-
-
-operation_room = OperationRoom()
-room_card_set.append(operation_room)
 
 
 # ------------------------------------地下湖------------------------------------
@@ -589,6 +510,7 @@ class Lake(HouseCard):
         self.force = True
 
     def into(self, role, direction=None):
+        super(Lake, self).into(role)
         if self.force:
             print("进入时直接落入湖水中，随机落到地下空白位置")
             print('你一脚踩空，下落到一片冰冷的湖水中')
@@ -599,12 +521,8 @@ class Lake(HouseCard):
                 if game_map[0].map[role.x][role.y] is None:
                     game_map[0].map[role.x][role.y] = self
                     break
-            role.into(self)
+            role.room = self
         self.force = False
-
-
-lake = Lake()
-room_card_set.append(lake)
 
 
 # ------------------------------------沾血的房间------------------------------------
@@ -619,10 +537,6 @@ class BloodRoom(HouseCard):
                                         describtion=None)
 
 
-blood_room = BloodRoom()
-room_card_set.append(blood_room)
-
-
 # ------------------------------------佣人房------------------------------------
 class MaidRoom(HouseCard):
     def __init__(self):
@@ -633,10 +547,6 @@ class MaidRoom(HouseCard):
                                        floor=[1, 1, 1],
                                        item_type='预兆',
                                        describtion=None)
-
-
-maid_room = MaidRoom()
-room_card_set.append(maid_room)
 
 
 # ------------------------------------楼座------------------------------------
@@ -656,10 +566,6 @@ class Balcony(HouseCard):
             role.hurt(type='肉体')
 
 
-balcony = Balcony()
-room_card_set.append(balcony)
-
-
 # ------------------------------------游戏室------------------------------------
 class GameRoom(HouseCard):
     def __init__(self):
@@ -670,10 +576,6 @@ class GameRoom(HouseCard):
                                        floor=[1, 1, 1],
                                        item_type='事件',
                                        describtion=None)
-
-
-game_room = GameRoom()
-room_card_set.append(game_room)
 
 
 # ------------------------------------熏黑的房间------------------------------------
@@ -688,10 +590,6 @@ class BlackRoom(HouseCard):
                                         describtion=None)
 
 
-black_room = BlackRoom()
-room_card_set.append(black_room)
-
-
 # ------------------------------------尘封的门廊------------------------------------
 class Porch(HouseCard):
     def __init__(self):
@@ -702,10 +600,6 @@ class Porch(HouseCard):
                                     floor=[1, 1, 1],
                                     item_type=None,
                                     describtion=None)
-
-
-porch = Porch()
-room_card_set.append(porch)
 
 
 # ------------------------------------地下楼梯------------------------------------
@@ -726,10 +620,6 @@ class Staircase(HouseCard):
         role.y = [2]
 
 
-staircase = Staircase()
-room_card_set.append(staircase)
-
-
 # ------------------------------------五芒星阵------------------------------------
 class Pentacle(HouseCard):
     def __init__(self):
@@ -744,15 +634,11 @@ class Pentacle(HouseCard):
     def leave(self, role):
         print("离开房间时，需要以'知识'进行'能力考验'，骰数大于4，则无恙；否则'意志'下降1级，无论成功与否，人物都能离开房间。")
         print('诡异的五芒星阵，似乎隐隐有点微光。')
-        if challenge(role, ability='知识', goal=4):
+        if sum(role.ability_challenge(ability="知识")) >= 4:
             print('你充分了解这个符号的意义，这并没有对你造成什么影响。')
         else:
             print('诡异的气氛让你受了不小的刺激。')
             role.reduce(ability='意志')
-
-
-pentacle = Pentacle()
-room_card_set.append(pentacle)
 
 
 # ------------------------------------荒废的房间------------------------------------
@@ -767,10 +653,6 @@ class WasteRoom(HouseCard):
                                         describtion=None)
 
 
-waste_room = WasteRoom()
-room_card_set.append(waste_room)
-
-
 # ------------------------------------天井------------------------------------
 class Yard(HouseCard):
     def __init__(self):
@@ -783,10 +665,6 @@ class Yard(HouseCard):
                                    describtion=None)
 
 
-yard = Yard()
-room_card_set.append(yard)
-
-
 # ------------------------------------庭院------------------------------------
 class Courtyard(HouseCard):
     def __init__(self):
@@ -797,10 +675,6 @@ class Courtyard(HouseCard):
                                         floor=[1, 1, 1],
                                         item_type='事件',
                                         describtion=None)
-
-
-courtyard = Courtyard()
-room_card_set.append(courtyard)
 
 
 # ------------------------------------暖炉房------------------------------------
@@ -816,11 +690,7 @@ class StoveRoom(HouseCard):
 
     def stay(self, role):
         print("若在此停留，则受到1点肉体伤害。")
-        role.hurt(type='肉体')
-
-
-stove_room = StoveRoom()
-room_card_set.append(stove_room)
+        role.hurt(type='肉体', value=1)
 
 
 # ------------------------------------食品储藏室------------------------------------
@@ -844,10 +714,6 @@ class FoodStoreroom(HouseCard):
             print('显然的，你的提升很有限。')
 
 
-food_storeroom = FoodStoreroom()
-room_card_set.append(food_storeroom)
-
-
 # ------------------------------------温室------------------------------------
 class Greenhouse(HouseCard):
     def __init__(self):
@@ -858,10 +724,6 @@ class Greenhouse(HouseCard):
                                          floor=[1, 1, 1],
                                          item_type='事件',
                                          describtion=None)
-
-
-greenroom = Greenhouse()
-room_card_set.append(greenroom)
 
 
 # ------------------------------------健身房------------------------------------
@@ -885,10 +747,6 @@ class Gym(HouseCard):
             print('显然的，你的提升很有限。')
 
 
-gym = Gym()
-room_card_set.append(gym)
-
-
 # ------------------------------------塔楼------------------------------------
 class Tower(HouseCard):
     def __init__(self):
@@ -909,7 +767,7 @@ class Tower(HouseCard):
             return True
         print("若要从这里通过，需要以'力量'进行'能力挑战'，骰数大于等于3，则成功；否则停止移动。")
         print('破碎的石材阻挡了你的去路，看来需要费点力气移动石头才能前进。')
-        if challenge(role, ability='力量', goal=3):
+        if sum(role.ability_challenge(ability='力量')) >= 3:
             print('这对你来说不是难事。')
             role.buff.append("通过（塔楼）")
             return True
@@ -923,10 +781,6 @@ class Tower(HouseCard):
             self.creatures[0].remove(role)
         if role in self.creatures[1]:
             self.creatures[1].remove(role)
-
-
-tower = Tower()
-room_card_set.append(tower)
 
 
 # ------------------------------------裂缝------------------------------------
@@ -948,14 +802,14 @@ class Crack(HouseCard):
         super(Crack, self).into(role, direction)
         if direction is None:
             direction = user_input()
-        self.creatures[[1, 1, 0, 0][direction]].append(role)
+        self.creatures[[1, 0][int(direction / 2)]].append(role)
 
     def use(self, role):
         if "通过（裂缝）" in role.buff:
             return True
         print("若要从这里通过，需要以'速度'进行'能力挑战'，骰数大于等于3，则成功；否则停止移动。")
         print('破碎的索桥摇摇晃晃，要通过这里，可能需要一些速度的技巧')
-        if challenge(role, ability='速度', goal=3):
+        if sum(role.ability_challenge(ability="速度")) >= 3:
             print('这对你来说不是难事。')
             role.buff.append("通过（裂缝）")
             return True
@@ -970,10 +824,6 @@ class Crack(HouseCard):
             self.creatures[0].remove(role)
         if role in self.creatures[1]:
             self.creatures[1].remove(role)
-
-
-crack = Crack()
-room_card_set.append(crack)
 
 
 # ------------------------------------陵墓------------------------------------
@@ -1001,7 +851,7 @@ class Mausoleum(HouseCard):
         if "通过（陵墓）" in role.buff:
             return True
         print("若要从这里通过，需要以'意志'进行'能力挑战'，骰数大于等于6，则成功；否则停止移动。")
-        if challenge(role, ability='意志', goal=6):
+        if sum(role.ability_challenge(ability="意志")) >= 6:
             print('你克服了自身的恐惧！')
             role.buff.append("通过（陵墓）")
             return True
@@ -1016,10 +866,6 @@ class Mausoleum(HouseCard):
             self.creatures[0].remove(role)
         if role in self.creatures[1]:
             self.creatures[1].remove(role)
-
-
-mausoleum = Mausoleum()
-room_card_set.append(mausoleum)
 
 
 # ------------------------------------升降梯------------------------------------
@@ -1084,22 +930,107 @@ class Elevator(HouseCard):
             print('房间剧烈震动，房间内的人物受伤了')
 
 
-elevator = Elevator()
-room_card_set.append(elevator)
 # ——————————————————————————————————————————————————————
-# 打乱
-random.shuffle(room_card_set)
+collapse = Collapse()
+chute = Chute()
+ballroom = Ballroom()
+broken = Broken()
+wine = Wine()
+store = Store()
+vault = Vault()
+old_porch = OldPorch()
+organ_room = OrganRoom()
+research_room = ResearchRoom()
+master_bedroom = MasterBedRoom()
+restaurant = Restaurant()
+libry = Libry()
+gallery = Gallery()
+kitchen = Kitchen()
+cellar = Cellar()
+loft = Loft()
+church = Church()
+bedroom = BedRoom()
+terrace = Terrace()
+graveyard = Graveyard()
+operation_room = OperationRoom()
+lake = Lake()
+blood_room = BloodRoom()
+maid_room = MaidRoom()
+balcony = Balcony()
+game_room = GameRoom()
+black_room = BlackRoom()
+porch = Porch()
+staircase = Staircase()
+pentacle = Pentacle()
+waste_room = WasteRoom()
+yard = Yard()
+courtyard = Courtyard()
+stove_room = StoveRoom()
+food_storeroom = FoodStoreroom()
+greenroom = Greenhouse()
+gym = Gym()
+tower = Tower()
+crack = Crack()
+mausoleum = Mausoleum()
+elevator = Elevator()
+
+
+def room_init():
+    room_card_set.append(collapse)
+    room_card_set.append(chute)
+    room_card_set.append(ballroom)
+    room_card_set.append(broken)
+    room_card_set.append(wine)
+    room_card_set.append(store)
+    room_card_set.append(vault)
+    room_card_set.append(old_porch)
+    room_card_set.append(organ_room)
+    room_card_set.append(research_room)
+    room_card_set.append(master_bedroom)
+    room_card_set.append(restaurant)
+    room_card_set.append(libry)
+    room_card_set.append(gallery)
+    room_card_set.append(kitchen)
+    room_card_set.append(cellar)
+    room_card_set.append(loft)
+    room_card_set.append(church)
+    room_card_set.append(bedroom)
+    room_card_set.append(terrace)
+    room_card_set.append(graveyard)
+    room_card_set.append(operation_room)
+    room_card_set.append(lake)
+    room_card_set.append(blood_room)
+    room_card_set.append(maid_room)
+    room_card_set.append(balcony)
+    room_card_set.append(game_room)
+    room_card_set.append(black_room)
+    room_card_set.append(porch)
+    room_card_set.append(staircase)
+    room_card_set.append(pentacle)
+    room_card_set.append(waste_room)
+    room_card_set.append(yard)
+    room_card_set.append(courtyard)
+    room_card_set.append(stove_room)
+    room_card_set.append(food_storeroom)
+    room_card_set.append(greenroom)
+    room_card_set.append(gym)
+    room_card_set.append(tower)
+    room_card_set.append(crack)
+    room_card_set.append(mausoleum)
+    room_card_set.append(elevator)
+    # 打乱
+    random.shuffle(room_card_set)
 
 
 # 地图初始化
 underground = Map(floor=0)
-underground.map[2][2] = down_steps
+underground.map[4][4] = down_steps
 game_map.append(underground)
 ground = Map(floor=1)
-ground.map[2][2] = staircase_0
-ground.map[2][3] = lobby_1
-ground.map[2][4] = lobby_0
+ground.map[4][7] = staircase_0
+ground.map[4][8] = lobby_1
+ground.map[4][9] = lobby_0
 game_map.append(ground)
 overground = Map(floor=2)
-overground.map[2][2] = up_steps
+overground.map[4][4] = up_steps
 game_map.append(overground)

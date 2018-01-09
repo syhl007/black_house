@@ -128,8 +128,8 @@ class Ointment(Item):
     def __init__(self):
         super(Ointment, self).__init__(name="治疗药膏", card_img=None)
 
-    def use(self, ability, target=self.owner):
-        target.recover(ability=ability)
+    def use(self):
+        # target.recover(ability=ability)
         self.lost()
 
 
