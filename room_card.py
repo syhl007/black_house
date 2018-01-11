@@ -5,8 +5,8 @@ from constant import room_card_set, game_map
 from util import draw_card, room_search, user_input, ahead_one, backward_one
 
 
-# 房间
-class HouseCard:
+# 房间卡基类
+class RoomCard:
     def __init__(self, name, door, window, card_img, describtion, item_type, floor):
         self.name = name
         self.door = door
@@ -21,6 +21,12 @@ class HouseCard:
         self.omens = []
         self.items = []
 
+    def __repr__(self):
+        return self.name
+
+    def __str__(self):
+        return self.name
+
     def rotate(self, type=1):
         if type == 1:
             self.door = ahead_one(self.door)
@@ -28,6 +34,12 @@ class HouseCard:
         else:
             self.door = backward_one(self.door)
             self.window = backward_one(self.window)
+
+    def get_creatures(self, role):
+        return self.creatures
+
+    def get_sign(self, role):
+        return self.sign
 
     def into(self, role, direction=None):
         print(role.name, "进入了", self.name)
@@ -55,55 +67,104 @@ class HouseCard:
         self.creatures.remove(role)
 
     def use(self, role):
-        pass
+        signs = self.get_sign(role)
+        for key in signs:
+            print(key)
+            pass
+
+
+# 隔断房间基类
+class PartitionRoom(RoomCard):
+    def __init__(self, name, door, window, card_img, describtion, item_type, floor):
+        super(PartitionRoom, self).__init__(name, [x*9 for x in door], window, card_img, describtion, item_type, floor)
+        self.sign = [['隔断'], ['隔断']]
+        self.creatures = [[], []]
+        self.omens = [[], []]
+        self.items = [[], []]
+
+    def __get_role_pos(self, role):
+        if role in self.creatures[0]:
+            return 0
+        else:
+            return 1
+
+    def get_creatures(self, role):
+        if role is None:
+            return self.creatures[0] + self.creatures[1]
+        index = self.__get_role_pos(role)
+        return self.creatures[index]
+
+    def get_sign(self, role):
+        index = self.__get_role_pos(role)
+        return self.sign[index]
+
+    def across(self, role, direction):
+        index = self.__get_role_pos(role)
+        if (direction in (2, 3) and index == 0) or (direction in (0, 1) and index == 1):
+            return True
+        else:
+            return self.challenge(role)
+
+    def challenge(self,role):
+        return False
+
+    def into(self, role, direction=None):
+        self.creatures[[0, 0, 1, 1][direction]].append(role)
+        role.room = self
+        print(role.name, "进入了", self.name)
+
+
+    def leave(self, role):
+        for l in self.creatures:
+            l.remove(role) if role in l else None
 
 
 # ------------------------------------下台阶------------------------------------
-down_steps = HouseCard(name='下台阶',
-                       door=[1, 1, 1, 1],
-                       window=[0, 0, 0, 0],
-                       card_img=None,
-                       item_type=None,
-                       floor=0,
-                       describtion=None)
+down_steps = RoomCard(name='下台阶',
+                      door=[1, 1, 1, 1],
+                      window=[0, 0, 0, 0],
+                      card_img=None,
+                      item_type=None,
+                      floor=0,
+                      describtion=None)
 
 # ------------------------------------上台阶------------------------------------
-up_steps = HouseCard(name='上台阶',
-                     door=[1, 1, 1, 1],
-                     window=[0, 0, 0, 0],
-                     card_img=None,
-                     item_type=None,
-                     floor=2,
-                     describtion=None)
+up_steps = RoomCard(name='上台阶',
+                    door=[1, 1, 1, 1],
+                    window=[0, 0, 0, 0],
+                    card_img=None,
+                    item_type=None,
+                    floor=2,
+                    describtion=None)
 
 # ------------------------------------大厅楼梯间------------------------------------
-staircase_0 = HouseCard(name='大厅楼梯间',
-                        door=[0, 0, 1, 0],
-                        window=[0, 0, 0, 2],
-                        card_img=None,
-                        item_type=None,
-                        floor=1,
-                        describtion=None)
+staircase_0 = RoomCard(name='大厅楼梯间',
+                       door=[0, 0, 1, 0],
+                       window=[0, 0, 0, 2],
+                       card_img=None,
+                       item_type=None,
+                       floor=1,
+                       describtion=None)
 # ------------------------------------大厅1------------------------------------
-lobby_1 = HouseCard(name='大厅1',
-                    door=[1, 1, 1, 1],
-                    window=[0, 0, 0, 0],
-                    card_img=None,
-                    item_type=None,
-                    floor=1,
-                    describtion=None)
+lobby_1 = RoomCard(name='大厅1',
+                   door=[1, 1, 1, 1],
+                   window=[0, 0, 0, 0],
+                   card_img=None,
+                   item_type=None,
+                   floor=1,
+                   describtion=None)
 # ------------------------------------大厅0------------------------------------
-lobby_0 = HouseCard(name='大厅0',
-                    door=[1, 1, 1, 1],
-                    window=[0, 0, 0, 0],
-                    card_img=None,
-                    item_type=None,
-                    floor=1,
-                    describtion=None)
+lobby_0 = RoomCard(name='大厅0',
+                   door=[1, 1, 1, 1],
+                   window=[0, 0, 0, 0],
+                   card_img=None,
+                   item_type=None,
+                   floor=1,
+                   describtion=None)
 
 
 # ------------------------------------崩塌的房间------------------------------------
-class Collapse(HouseCard):
+class Collapse(RoomCard):
     def __init__(self):
         super(Collapse, self).__init__(name='崩塌的房间',
                                        door=[1, 1, 1, 1],
@@ -164,7 +225,7 @@ class Collapse(HouseCard):
 
 
 # ------------------------------------煤导槽-----------------------------------
-class Chute(HouseCard):
+class Chute(RoomCard):
     def __init__(self):
         super(Chute, self).__init__(name='煤导槽',
                                     door=[1, 0, 0, 0],
@@ -187,13 +248,14 @@ class Chute(HouseCard):
         super(Chute, self).stay(role)
         print("这是一条单向通向'下台阶'的特殊通道")
         self.leave(role)
+        down_steps.into(role)
         role.floor = 0
-        role.x = 2
-        role.y = 2
+        role.x = 4
+        role.y = 4
 
 
 # ------------------------------------舞厅------------------------------------
-class Ballroom(HouseCard):
+class Ballroom(RoomCard):
     def __init__(self):
         super(Ballroom, self).__init__(name='舞厅',
                                        door=[1, 1, 1, 1],
@@ -206,7 +268,7 @@ class Ballroom(HouseCard):
 
 
 # ------------------------------------破烂的房间-----------------------------------
-class Broken(HouseCard):
+class Broken(RoomCard):
     def __init__(self):
         super(Broken, self).__init__(name='破烂的房间',
                                      door=[1, 0, 0, 0],
@@ -228,7 +290,7 @@ class Broken(HouseCard):
 
 
 # ------------------------------------酒窖------------------------------------
-class Wine(HouseCard):
+class Wine(RoomCard):
     def __init__(self):
         super(Wine, self).__init__(name='酒窖',
                                    door=[1, 0, 1, 0],
@@ -240,7 +302,7 @@ class Wine(HouseCard):
 
 
 # ------------------------------------储藏室------------------------------------
-class Store(HouseCard):
+class Store(RoomCard):
     def __init__(self):
         super(Store, self).__init__(name='储藏室',
                                     door=[1, 0, 0, 0],
@@ -252,7 +314,7 @@ class Store(HouseCard):
 
 
 # ------------------------------------保险库------------------------------------
-class Vault(HouseCard):
+class Vault(RoomCard):
     def __init__(self):
         super(Vault, self).__init__(name='保险库',
                                     door=[1, 0, 0, 0],
@@ -278,7 +340,7 @@ class Vault(HouseCard):
 
 
 # ------------------------------------老朽的门廊------------------------------------
-class OldPorch(HouseCard):
+class OldPorch(RoomCard):
     def __init__(self):
         super(OldPorch, self).__init__(name='老朽的门廊',
                                        door=[1, 1, 1, 1],
@@ -290,7 +352,7 @@ class OldPorch(HouseCard):
 
 
 # ------------------------------------风琴室------------------------------------
-class OrganRoom(HouseCard):
+class OrganRoom(RoomCard):
     def __init__(self):
         super(OrganRoom, self).__init__(name='风琴室',
                                         door=[0, 0, 1, 1],
@@ -302,7 +364,7 @@ class OrganRoom(HouseCard):
 
 
 # ------------------------------------研究室------------------------------------
-class ResearchRoom(HouseCard):
+class ResearchRoom(RoomCard):
     def __init__(self):
         super(ResearchRoom, self).__init__(name='研究室',
                                            door=[1, 0, 1, 0],
@@ -314,7 +376,7 @@ class ResearchRoom(HouseCard):
 
 
 # ------------------------------------主人房------------------------------------
-class MasterBedRoom(HouseCard):
+class MasterBedRoom(RoomCard):
     def __init__(self):
         super(MasterBedRoom, self).__init__(name='主人房',
                                             door=[1, 0, 0, 1],
@@ -326,7 +388,7 @@ class MasterBedRoom(HouseCard):
 
 
 # ------------------------------------餐厅------------------------------------
-class Restaurant(HouseCard):
+class Restaurant(RoomCard):
     def __init__(self):
         super(Restaurant, self).__init__(name='餐厅',
                                          door=[1, 1, 0, 0],
@@ -338,7 +400,7 @@ class Restaurant(HouseCard):
 
 
 # ------------------------------------图书馆------------------------------------
-class Libry(HouseCard):
+class Libry(RoomCard):
     def __init__(self):
         super(Libry, self).__init__(name='图书馆',
                                     door=[0, 0, 1, 1],
@@ -359,7 +421,7 @@ class Libry(HouseCard):
 
 
 # ------------------------------------雕塑长廊------------------------------------
-class Gallery(HouseCard):
+class Gallery(RoomCard):
     def __init__(self):
         super(Gallery, self).__init__(name='雕塑长廊',
                                       door=[1, 0, 1, 0],
@@ -371,7 +433,7 @@ class Gallery(HouseCard):
 
 
 # ------------------------------------厨房------------------------------------
-class Kitchen(HouseCard):
+class Kitchen(RoomCard):
     def __init__(self):
         super(Kitchen, self).__init__(name='厨房',
                                       door=[1, 1, 0, 0],
@@ -383,7 +445,7 @@ class Kitchen(HouseCard):
 
 
 # ------------------------------------地窖------------------------------------
-class Cellar(HouseCard):
+class Cellar(RoomCard):
     def __init__(self):
         super(Cellar, self).__init__(name='地窖',
                                      door=[1, 0, 0, 0],
@@ -399,7 +461,7 @@ class Cellar(HouseCard):
 
 
 # ------------------------------------阁楼------------------------------------
-class Loft(HouseCard):
+class Loft(RoomCard):
     def __init__(self):
         super(Loft, self).__init__(name='阁楼',
                                    door=[0, 0, 1, 0],
@@ -420,7 +482,7 @@ class Loft(HouseCard):
 
 
 # ------------------------------------礼拜堂------------------------------------
-class Church(HouseCard):
+class Church(RoomCard):
     def __init__(self):
         super(Church, self).__init__(name='礼拜堂',
                                      door=[1, 0, 0, 0],
@@ -441,7 +503,7 @@ class Church(HouseCard):
 
 
 # ------------------------------------寝室------------------------------------
-class BedRoom(HouseCard):
+class BedRoom(RoomCard):
     def __init__(self):
         super(BedRoom, self).__init__(name='寝室',
                                       door=[0, 1, 0, 1],
@@ -453,7 +515,7 @@ class BedRoom(HouseCard):
 
 
 # ------------------------------------露台------------------------------------
-class Terrace(HouseCard):
+class Terrace(RoomCard):
     def __init__(self):
         super(Terrace, self).__init__(name='露台',
                                       door=[1, 0, 1, 0],
@@ -465,7 +527,7 @@ class Terrace(HouseCard):
 
 
 # ------------------------------------墓园------------------------------------
-class Graveyard(HouseCard):
+class Graveyard(RoomCard):
     def __init__(self):
         super(Graveyard, self).__init__(name='墓园',
                                         door=[0, 0, 1, 0],
@@ -486,7 +548,7 @@ class Graveyard(HouseCard):
 
 
 # ------------------------------------手术室------------------------------------
-class OperationRoom(HouseCard):
+class OperationRoom(RoomCard):
     def __init__(self):
         super(OperationRoom, self).__init__(name='手术室',
                                             door=[0, 1, 1, 0],
@@ -498,7 +560,7 @@ class OperationRoom(HouseCard):
 
 
 # ------------------------------------地下湖------------------------------------
-class Lake(HouseCard):
+class Lake(RoomCard):
     def __init__(self):
         super(Lake, self).__init__(name='地下湖',
                                    door=[1, 1, 0, 0],
@@ -526,7 +588,7 @@ class Lake(HouseCard):
 
 
 # ------------------------------------沾血的房间------------------------------------
-class BloodRoom(HouseCard):
+class BloodRoom(RoomCard):
     def __init__(self):
         super(BloodRoom, self).__init__(name='沾血的房间',
                                         door=[1, 1, 1, 1],
@@ -538,7 +600,7 @@ class BloodRoom(HouseCard):
 
 
 # ------------------------------------佣人房------------------------------------
-class MaidRoom(HouseCard):
+class MaidRoom(RoomCard):
     def __init__(self):
         super(MaidRoom, self).__init__(name='佣人房',
                                        door=[1, 1, 1, 1],
@@ -550,7 +612,7 @@ class MaidRoom(HouseCard):
 
 
 # ------------------------------------楼座------------------------------------
-class Balcony(HouseCard):
+class Balcony(RoomCard):
     def __init__(self):
         super(Balcony, self).__init__(name='楼座',
                                       door=[0, 1, 0, 1],
@@ -567,7 +629,7 @@ class Balcony(HouseCard):
 
 
 # ------------------------------------游戏室------------------------------------
-class GameRoom(HouseCard):
+class GameRoom(RoomCard):
     def __init__(self):
         super(GameRoom, self).__init__(name='游戏室',
                                        door=[1, 1, 1, 0],
@@ -579,7 +641,7 @@ class GameRoom(HouseCard):
 
 
 # ------------------------------------熏黑的房间------------------------------------
-class BlackRoom(HouseCard):
+class BlackRoom(RoomCard):
     def __init__(self):
         super(BlackRoom, self).__init__(name='熏黑的房间',
                                         door=[1, 1, 1, 1],
@@ -591,7 +653,7 @@ class BlackRoom(HouseCard):
 
 
 # ------------------------------------尘封的门廊------------------------------------
-class Porch(HouseCard):
+class Porch(RoomCard):
     def __init__(self):
         super(Porch, self).__init__(name='尘封的门廊',
                                     door=[1, 1, 1, 1],
@@ -603,7 +665,7 @@ class Porch(HouseCard):
 
 
 # ------------------------------------地下楼梯------------------------------------
-class Staircase(HouseCard):
+class Staircase(RoomCard):
     def __init__(self):
         super(Staircase, self).__init__(name='地下楼梯',
                                         door=[0, 0, 1, 0],
@@ -621,7 +683,7 @@ class Staircase(HouseCard):
 
 
 # ------------------------------------五芒星阵------------------------------------
-class Pentacle(HouseCard):
+class Pentacle(RoomCard):
     def __init__(self):
         super(Pentacle, self).__init__(name='五芒星阵',
                                        door=[0, 1, 0, 0],
@@ -642,7 +704,7 @@ class Pentacle(HouseCard):
 
 
 # ------------------------------------荒废的房间------------------------------------
-class WasteRoom(HouseCard):
+class WasteRoom(RoomCard):
     def __init__(self):
         super(WasteRoom, self).__init__(name='荒废的房间',
                                         door=[1, 1, 1, 1],
@@ -654,7 +716,7 @@ class WasteRoom(HouseCard):
 
 
 # ------------------------------------天井------------------------------------
-class Yard(HouseCard):
+class Yard(RoomCard):
     def __init__(self):
         super(Yard, self).__init__(name='天井',
                                    door=[1, 0, 1, 1],
@@ -666,7 +728,7 @@ class Yard(HouseCard):
 
 
 # ------------------------------------庭院------------------------------------
-class Courtyard(HouseCard):
+class Courtyard(RoomCard):
     def __init__(self):
         super(Courtyard, self).__init__(name='庭院',
                                         door=[1, 0, 1, 0],
@@ -678,7 +740,7 @@ class Courtyard(HouseCard):
 
 
 # ------------------------------------暖炉房------------------------------------
-class StoveRoom(HouseCard):
+class StoveRoom(RoomCard):
     def __init__(self):
         super(StoveRoom, self).__init__(name='暖炉房',
                                         door=[1, 1, 0, 1],
@@ -694,7 +756,7 @@ class StoveRoom(HouseCard):
 
 
 # ------------------------------------食品储藏室------------------------------------
-class FoodStoreroom(HouseCard):
+class FoodStoreroom(RoomCard):
     def __init__(self):
         super(FoodStoreroom, self).__init__(name='食品储藏室',
                                             door=[1, 0, 1, 0],
@@ -715,7 +777,7 @@ class FoodStoreroom(HouseCard):
 
 
 # ------------------------------------温室------------------------------------
-class Greenhouse(HouseCard):
+class Greenhouse(RoomCard):
     def __init__(self):
         super(Greenhouse, self).__init__(name='温室',
                                          door=[1, 0, 0, 0],
@@ -727,7 +789,7 @@ class Greenhouse(HouseCard):
 
 
 # ------------------------------------健身房------------------------------------
-class Gym(HouseCard):
+class Gym(RoomCard):
     def __init__(self):
         super(Gym, self).__init__(name='健身房',
                                   door=[0, 1, 1, 0],
@@ -748,7 +810,7 @@ class Gym(HouseCard):
 
 
 # ------------------------------------塔楼------------------------------------
-class Tower(HouseCard):
+class Tower(PartitionRoom):
     def __init__(self):
         super(Tower, self).__init__(name='塔楼',
                                     door=[0, 1, 0, 1],
@@ -757,34 +819,27 @@ class Tower(HouseCard):
                                     floor=[1, 1, 1],
                                     item_type='预兆',
                                     describtion=None)
-        self.sign.append("隔断")
-        self.role = [[], []]
-        self.items = [[], []]
-        self.omens = [[], []]
 
-    def use(self, role):
-        if "通过（塔楼）" in role.buff:
-            return True
+    def challenge(self, role):
         print("若要从这里通过，需要以'力量'进行'能力挑战'，骰数大于等于3，则成功；否则停止移动。")
         print('破碎的石材阻挡了你的去路，看来需要费点力气移动石头才能前进。')
         if sum(role.ability_challenge(ability='力量')) >= 3:
             print('这对你来说不是难事。')
-            role.buff.append("通过（塔楼）")
+            if role in self.creatures[0]:
+                self.creatures[0].remove(role)
+                self.creatures[1].append(role)
+            elif role in self.creatures[1]:
+                self.creatures[1].remove(role)
+                self.creatures[0].append(role)
             return True
         else:
             print('太沉了，看来你只能停下另找他路')
             role.move = 0
-
-    def leave(self, role):
-        role.buff.remove("通过（塔楼）")
-        if role in self.creatures[0]:
-            self.creatures[0].remove(role)
-        if role in self.creatures[1]:
-            self.creatures[1].remove(role)
+            return False
 
 
 # ------------------------------------裂缝------------------------------------
-class Crack(HouseCard):
+class Crack(PartitionRoom):
     def __init__(self):
         super(Crack, self).__init__(name='裂缝',
                                     door=[0, 1, 0, 1],
@@ -793,83 +848,58 @@ class Crack(HouseCard):
                                     floor=[1, 1, 1],
                                     item_type=None,
                                     describtion=None)
-        self.sign.append("隔断")
-        self.creatures = [[], []]
-        self.items = [[], []]
-        self.omens = [[], []]
 
-    def into(self, role, direction=None):
-        super(Crack, self).into(role, direction)
-        if direction is None:
-            direction = user_input()
-        self.creatures[[1, 0][int(direction / 2)]].append(role)
-
-    def use(self, role):
-        if "通过（裂缝）" in role.buff:
-            return True
+    def challenge(self,role):
+        super(Crack, self).challenge(role)
         print("若要从这里通过，需要以'速度'进行'能力挑战'，骰数大于等于3，则成功；否则停止移动。")
         print('破碎的索桥摇摇晃晃，要通过这里，可能需要一些速度的技巧')
         if sum(role.ability_challenge(ability="速度")) >= 3:
             print('这对你来说不是难事。')
-            role.buff.append("通过（裂缝）")
+            if role in self.creatures[0]:
+                self.creatures[0].remove(role)
+                self.creatures[1].append(role)
+            elif role in self.creatures[1]:
+                self.creatures[1].remove(role)
+                self.creatures[0].append(role)
             return True
         else:
             print('你差点一脚踩空，看来，你只能停下另寻他路了')
             role.move = 0
             return False
 
-    def leave(self, role):
-        role.buff.remove("通过（裂缝）")
-        if role in self.creatures[0]:
-            self.creatures[0].remove(role)
-        if role in self.creatures[1]:
-            self.creatures[1].remove(role)
 
 
 # ------------------------------------陵墓------------------------------------
-class Mausoleum(HouseCard):
+class Mausoleum(PartitionRoom):
     def __init__(self):
         super(Mausoleum, self).__init__(name='陵墓',
-                                        door=[9, 0, 9, 0],
+                                        door=[1, 0, 1, 0],
                                         window=[0, 0, 0, 0],
                                         card_img=None,
                                         floor=[1, 1, 1],
                                         item_type='预兆',
                                         describtion=None)
-        self.sign.append("隔断")
-        self.creatures = [[], []]
-        self.items = [[], []]
-        self.omens = [[], []]
 
-    def into(self, role, direction=None):
-        super(Mausoleum, self).into(role, direction)
-        if direction is None:
-            direction = user_input()
-        self.creatures[[1, 1, 0, 0][direction]].append(role)
-
-    def use(self, role):
-        if "通过（陵墓）" in role.buff:
-            return True
+    def challenge(self, role):
         print("若要从这里通过，需要以'意志'进行'能力挑战'，骰数大于等于6，则成功；否则停止移动。")
         if sum(role.ability_challenge(ability="意志")) >= 6:
             print('你克服了自身的恐惧！')
-            role.buff.append("通过（陵墓）")
+            if role in self.creatures[0]:
+                self.creatures[0].remove(role)
+                self.creatures[1].append(role)
+            elif role in self.creatures[1]:
+                self.creatures[1].remove(role)
+                self.creatures[0].append(role)
             return True
         else:
             print('你的双腿不受自己的控制，无法行动')
             role.move = 0
             return False
 
-    def leave(self, role):
-        role.buff.remove("通过（陵墓）")
-        if role in self.creatures[0]:
-            self.creatures[0].remove(role)
-        if role in self.creatures[1]:
-            self.creatures[1].remove(role)
 
 
 # ------------------------------------升降梯------------------------------------
-class Elevator(HouseCard):
+class Elevator(RoomCard):
     def __init__(self):
         super(Elevator, self).__init__(name='升降梯',
                                        door=[1, 0, 0, 0],

@@ -12,6 +12,12 @@ class Item:
         self.is_discard = is_discard
         self.is_give = is_give
 
+    def __repr__(self):
+        return self.name
+
+    def __str__(self):
+        return self.name
+
     # 转交/获得
     def set_owner(self, owner):
         if self.owner is not None:

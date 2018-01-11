@@ -1,4 +1,5 @@
 from card import *
+from constant import role_list
 from event_card import event_init
 from omen_card import omen_init
 from room_card import lobby_0, room_init
@@ -18,8 +19,10 @@ class Main:
                   power=5, power_strip=[0, 2, 3, 3, 4, 5, 6, 6, 7],
                   know=5, know_strip=[0, 1, 3, 3, 5, 6, 6, 7],
                   speed=2, speed_strip=[0, 3, 4, 4, 4, 5, 6, 7, 8])
-        bj.room=lobby_0
+        role_list.append(bj)
+        bj.room = lobby_0
         lobby_0.creatures.append(bj)
+        print("基本操作：i、查看物品|o、查看预兆列表|b、查看buff|f、房屋互动")
         while True:
             try:
                 if bj.move_bar > 0:
@@ -27,24 +30,34 @@ class Main:
                 else:
                     print("请选择行动：2、休息")
                 inp = user_input()
-                if int(inp) == 1:
+                # 移动&休息
+                if inp == "1":
                     dir_str = ""
-                    if bj.room.door[0] > 0:
+                    if bj.room.door[0] >= 1:
                         dir_str += "0-↑|"
-                    if bj.room.door[1] > 0:
+                    if bj.room.door[1] >= 1:
                         dir_str += "1-→|"
-                    if bj.room.door[2] > 0:
+                    if bj.room.door[2] >= 1:
                         dir_str += "2-↓|"
-                    if bj.room.door[3] > 0:
+                    if bj.room.door[3] >= 1:
                         dir_str += "3-←|"
                     print("方向：", dir_str)
                     bj.move(direction=int(user_input()))
-                elif int(inp) == 2:
+                elif inp == "2":
                     bj.rest()
+                if inp == "i":
+                    print("[物品栏]", bj.items_list())
+                if inp == "o":
+                    print("[预兆栏]", bj.omens_list())
+                if inp == "b":
+                    print("[buff]", bj.buff_list())
+                if inp == "f":
+                    bj.room.use(bj)
             except Exception as e:
                 print(e.args)
                 # continue
                 raise e
+
 
 m = Main()
 m.game()

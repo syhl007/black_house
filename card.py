@@ -219,12 +219,16 @@ class Role:
     def move(self, direction):
         if "丝网" in self.buff:
             print("")
-        enemy = len([x for x in self.room.creatures if x.camp != self.camp])
+        enemy = len([x for x in self.room.get_creatures(self) if x.camp != self.camp])
         self.move_bar -= enemy
         if not self.first_move and self.move_bar <= 0:
             print("行动力不足")
             return
-        if self.room.door[direction] == 1:
+        if self.room.door[direction] >= 1:
+            if self.room.door[direction] == 9:
+                if not self.room.across(self, direction):
+                    self.first_move = False
+                    return
             if direction == 0:
                 x = self.x
                 y = self.y - 1
@@ -268,6 +272,7 @@ class Role:
             self.first_move = False
             self.room.leave(self)
             new_room.into(role=self, direction=direction)
+
 
     # 探险
     def explore(self, direction):
@@ -316,21 +321,37 @@ class Role:
         res = {'ability': ability, 'result': self.dice(n=self.get(ability=ability))}
         return res
 
-    # 偷窃列表
-    def steal_list(self):
-        return [x for x in self.items if x.is_steal] + [x for x in self.items if x.is_steal]
+    # 物品列表
+    def items_list(self, type=None):
+        if type == "使用":
+            l = [x for x in self.items if x.is_use]
+        elif type == "偷窃":
+            l = [x for x in self.items if x.is_steal]
+        elif type == "丢弃":
+            l = [x for x in self.items if x.is_discard]
+        elif type == "给予":
+            l = [x for x in self.items if x.is_give]
+        else:
+            l = self.items
+        return l
 
-    # 丢弃列表
-    def discard_list(self):
-        return [x for x in self.items if x.is_discard] + [x for x in self.items if x.is_discard]
+    # 预兆列表
+    def omens_list(self, type=None):
+        if type == "使用":
+            l = [x for x in self.omens if x.is_use]
+        elif type == "偷窃":
+            l = [x for x in self.omens if x.is_steal]
+        elif type == "丢弃":
+            l = [x for x in self.omens if x.is_discard]
+        elif type == "给予":
+            l = [x for x in self.omens if x.is_give]
+        else:
+            l = self.omens
+        return l
 
-    # 给予列表
-    def give_list(self):
-        return [x for x in self.items if x.is_give] + [x for x in self.items if x.is_give]
-
-    # 使用列表
-    def use_list(self):
-        return [x for x in self.items if x.is_use] + [x for x in self.items if x.is_use]
+    # buff列表
+    def buff_list(self, type=None):
+        return self.buff
 
     # 能力挑战
     def ability_challenge(self, ability, n=0, type='房间'):

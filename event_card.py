@@ -24,7 +24,7 @@ class AHorribleScream(Event):
             elif 1 <= sum(res) <= 3:
                 print(role.name, "收到骰1点精神伤害")
                 role.hurt(type="精神", n=1)
-            elif sum(res) == 0:
+            else:
                 print(role.name, "收到骰2点精神伤害")
                 role.hurt(type="精神", n=2)
 
@@ -88,7 +88,7 @@ class Freedom(Event):
         print("“外面！你必须到外面去！自由的飞翔吧！”")
         rooms = room_search(names=["庭院", "墓园", "塔楼", "露台"])
         for room in rooms:
-            for role in room.creatures:
+            for role in room.get_creatures():
                 if role.camp >= 0:
                     res = role.ability_challenge(ability="意志", type="事件")
                     if sum(res) >= 4:
@@ -305,7 +305,7 @@ class Wild(Event):
     def do(self, *args, **kwargs):
         rooms = room_search(names=["庭院", "墓园", "天井", "塔楼", "露台"])
         for room in rooms:
-            for role in room.creatures:
+            for role in room.get_creatures():
                 res = role.ability_challenge(ability="力量", type="事件")
                 if sum(res) >= 5:
                     print(role.name, "坚定的站立着")
@@ -369,9 +369,9 @@ class Mirror_1(Event):
         print("房间中古老的大镜映照着惊慌失措的你")
         print("你忽然意识到，这是某一时空的自己")
         print("而你发现你可以透过此镜可以传递一件物品")
-        if len(role.items) > 0:
+        if len(role.items_list()) > 0:
             print("你决定帮助镜子那边的自己")
-            item = role.discard_list()
+            item = role.items_list()
             item_card_set.append(item)
             random.shuffle(item_card_set)
         else:
