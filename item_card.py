@@ -119,7 +119,7 @@ class Jewellery(Item):
         super(Jewellery, self).lost()
 
     def use(self):
-        room = game_map[self.owner.floor].map[self.owner.x][self.owner.y]
+        room = self.owner.room
         for e in room.enemy:
             e.get_coma()
         self.lost()

@@ -42,15 +42,20 @@ class Main:
                     if bj.room.door[3] >= 1:
                         dir_str += "3-←|"
                     print("方向：", dir_str)
-                    bj.move(direction=int(user_input()))
+                    try:
+                        bj.move(direction=int(user_input()))
+                    except:
+                        continue
                 elif inp == "2":
                     bj.rest()
+                if inp == "r":
+                    print("[所在房间]:", bj.room)
                 if inp == "i":
-                    print("[物品栏]", bj.items_list())
+                    print("[物品栏]:", bj.get_items_list())
                 if inp == "o":
-                    print("[预兆栏]", bj.omens_list())
+                    print("[预兆栏]:", bj.get_omens_list())
                 if inp == "b":
-                    print("[buff]", bj.buff_list())
+                    print("[buff]:", bj.get_buff_list())
                 if inp == "f":
                     bj.room.use(bj)
             except Exception as e:

@@ -2,7 +2,9 @@ import json
 import random
 
 from constant import room_card_set, game_map
-from util import user_input, live_map_cheak
+from item_card import Item
+from omen_card import Omen
+from util import user_input, live_map_cheak, set_room
 
 # 游戏进度
 game_schedule = 0
@@ -35,8 +37,6 @@ class Role:
         self.know_strip = know_strip
         self.extra_know = 0
         self.move_bar = speed
-        self.x = 4
-        self.y = 9
         self.floor = 1
         self.room = None
         self.buff = []
@@ -215,10 +215,44 @@ class Role:
             if self.know <= 0:
                 self.know = 1
 
+    # 挣扎脱困
+    def struggle(self, name, ability, goal, role=None):
+        if name + "3" in self.buff or name + "2" in self.buff or name + "1" in self.buff:
+            print(self.name, "被", name, "困住，无法移动")
+            if role is None:
+                res = self.ability_challenge(ability=ability, type="事件")
+                print(self.name, "尝试挣脱，结果为：", res)
+            else:
+                res = role.ability_challenge(ability=ability, type="事件")
+                print(role.name, "尝试帮助", self.name, "，结果为：", res)
+            if sum(res) >= goal:
+                self.buff.remove(name + "3") if name + "3" in self.buff else None
+                self.buff.remove(name + "2") if name + "2" in self.buff else None
+                self.buff.remove(name + "1") if name + "1" in self.buff else None
+                return True
+            else:
+                print(self.name, "没能脱出，但似乎松动了些。")
+                if name + "3" in self.buff:
+                    self.buff.remove(name + "3")
+                    self.buff.append(name + "2")
+                elif name + "2" in self.buff:
+                    self.buff.remove(name + "2")
+                    self.buff.append(name + "1")
+                elif name + "1" in self.buff:
+                    print("剩余的", name, "不再阻难你，但你看来也需要休息一下才能行动了。")
+                    self.buff.remove(name + "1")
+                self.move_bar = 0
+                self.first_move = False
+                return False
+        else:
+            return True
+
     # 移动
     def move(self, direction):
-        if "丝网" in self.buff:
-            print("")
+        # 丝网判断
+        self.struggle(name="丝网", ability="力量", goal=4)
+        # 瓦砾判断
+        self.struggle(name="瓦砾", ability="力量", goal=4)
         enemy = len([x for x in self.room.get_creatures(self) if x.camp != self.camp])
         self.move_bar -= enemy
         if not self.first_move and self.move_bar <= 0:
@@ -228,22 +262,23 @@ class Role:
             if self.room.door[direction] == 9:
                 if not self.room.across(self, direction):
                     self.first_move = False
+                    self.move_bar = 0
                     return
             if direction == 0:
-                x = self.x
-                y = self.y - 1
+                x = self.room.x
+                y = self.room.y - 1
             elif direction == 1:
-                x = self.x + 1
-                y = self.y
+                x = self.room.x + 1
+                y = self.room.y
             elif direction == 2:
-                x = self.x
-                y = self.y + 1
+                x = self.room.x
+                y = self.room.y + 1
             elif direction == 3:
-                x = self.x - 1
-                y = self.y
+                x = self.room.x - 1
+                y = self.room.y
             else:
-                x = self.x
-                y = self.y
+                x = self.room.x
+                y = self.room.y
             try:
                 new_room = game_map[self.floor].map[x][y]
             except:
@@ -252,27 +287,31 @@ class Role:
             if new_room is None:
                 while True:
                     new_room = self.explore(direction)
-                    game_map[self.floor].map[x][y] = new_room
+                    set_room(new_room, self.floor, x, y)
                     if live_map_cheak(floor=self.floor) > 0:
                         break
                     else:
                         room_card_set.append(new_room)
                         random.shuffle(room_card_set)
-                        game_map[self.floor].map[x][y] = None
-                self.x = x
-                self.y = y
+                        set_room(None, self.floor, x, y)
                 self.move_bar = 0
             else:
                 if new_room.door[[2, 3, 0, 1][direction]] == 0:
                     print("这扇门似乎和空间牢牢的固定在一起。")
                     return
-                self.x = x
-                self.y = y
                 self.move_bar -= 1
             self.first_move = False
             self.room.leave(self)
             new_room.into(role=self, direction=direction)
 
+    # 获得道具/预兆
+    def get_obj(self, obj):
+        if isinstance(obj, Item):
+            self.items.append(obj)
+            obj.set_owner(self)
+        elif isinstance(obj, Omen):
+            self.omens.append(obj)
+            obj.set_owner(self)
 
     # 探险
     def explore(self, direction):
@@ -322,7 +361,7 @@ class Role:
         return res
 
     # 物品列表
-    def items_list(self, type=None):
+    def get_items_list(self, type=None):
         if type == "使用":
             l = [x for x in self.items if x.is_use]
         elif type == "偷窃":
@@ -336,7 +375,7 @@ class Role:
         return l
 
     # 预兆列表
-    def omens_list(self, type=None):
+    def get_omens_list(self, type=None):
         if type == "使用":
             l = [x for x in self.omens if x.is_use]
         elif type == "偷窃":
@@ -350,12 +389,18 @@ class Role:
         return l
 
     # buff列表
-    def buff_list(self, type=None):
+    def get_buff_list(self, type=None):
         return self.buff
 
     # 能力挑战
     def ability_challenge(self, ability, n=0, type='房间'):
         if type == '事件' and '蜡烛' in self.buff:
+            n += 1
+        if "水滴" in self.room.get_sign(self):
+            print("停不下来的滴答声让你无法集中精神，骰子-1")
+            n -= 1
+        if "祝福" in self.room.get_sign(self):
+            print("神圣的气息让你大有增益，骰子+1")
             n += 1
         if '天使的羽毛（生效中）' in self.buff:
             self.buff.remove('天使的羽毛（生效中）')

@@ -3,7 +3,7 @@ import random
 from constant import role_list, room_card_set, game_map, item_card_set, event_card_set
 from item_card import monkey, magic_box
 from room_card import yard, lobby_0, up_steps, stove_room
-from util import room_search, draw_card
+from util import room_search, draw_card, set_room
 
 
 class Event:
@@ -43,7 +43,7 @@ class SilkScreen(Event):
             role.promote(ability='力量')
         else:
             print(role.name, "被丝网缠住了。")
-            role.buff.append("丝网")
+            role.buff.append("丝网3")
 
 
 # ------------------------------------狂暴本质------------------------------------
@@ -99,11 +99,12 @@ class Freedom(Event):
                         if yard in room_card_set:
                             role.floor = 0
                             while True:
-                                role.x = random.randint(0, 4)
-                                role.y = random.randint(0, 4)
-                                if game_map[0].map[role.x][role.y] is None:
-                                    game_map[0].map[role.x][role.y] = yard
+                                x = random.randint(0, 4)
+                                y = random.randint(0, 4)
+                                if game_map[0].map[x][y] is None:
+                                    set_room(yard, role.floor, x, y)
                                     room_card_set.remove(yard)
+                                    yard.into(role)
                                     break
                         else:
                             x = 0
@@ -157,12 +158,12 @@ class Strange(Event):
     def do(self, *args, **kwargs):
         print("你觉得你走进了一个充满迷雾的走廊，迷迷糊糊的前进着，当你回头望去，发现一切迷雾都消失了")
         role = kwargs.get("role")
-        game_map[role.floor].map[role.x][role.y] = None
+        set_room(None, role.floor, role.room.x, role.room.y)
         while True:
-            role.x = random.randint(0, 4)
-            role.y = random.randint(0, 4)
-            if game_map[role.floor].map[role.x][role.y] is None:
-                game_map[role.floor].map[role.x][role.y] = role.room
+            x = random.randint(0, 4)
+            y = random.randint(0, 4)
+            if game_map[role.floor].map[x][y] is None:
+                set_room(role.room, role.floor, x, y)
                 break
 
 
@@ -199,10 +200,10 @@ class LostSpirit(Event):
             elif 0 <= sum(res) <= 1:
                 role.floor = 0
             while True:
-                role.x = random.randint(0, 4)
-                role.y = random.randint(0, 4)
-                if game_map[role.floor].map[role.x][role.y] is None:
-                    game_map[role.floor].map[role.x][role.y] = role.explore(direction=random.randint(0,3))
+                x = random.randint(0, 4)
+                y = random.randint(0, 4)
+                if game_map[role.floor].map[x][y] is None:
+                    set_room(role.explore(direction=random.randint(0, 3)), role.floor, x, y)
                     break
 
 
@@ -369,9 +370,9 @@ class Mirror_1(Event):
         print("房间中古老的大镜映照着惊慌失措的你")
         print("你忽然意识到，这是某一时空的自己")
         print("而你发现你可以透过此镜可以传递一件物品")
-        if len(role.items_list()) > 0:
+        if len(role.get_items_list()) > 0:
             print("你决定帮助镜子那边的自己")
-            item = role.items_list()
+            item = role.get_items_list()
             item_card_set.append(item)
             random.shuffle(item_card_set)
         else:

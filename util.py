@@ -25,11 +25,6 @@ def backward_one(l):
     return l
 
 
-# 设置房间卡
-def set_room(role, new_room, direction, rotate, map):
-    pass
-
-
 # 行动
 def action(role, act, room_set, map, first=False, direction=None):
     room = map[role.x][role.y]
@@ -122,6 +117,13 @@ def draw_card(type):
     else:
         s = event_card_set
     return s.pop()
+
+
+# 设置房间卡
+def set_room(room, floor, x, y):
+    game_map[floor].map[x][y] = room
+    room.x = x
+    room.y = y
 
 
 # 遍历地图版

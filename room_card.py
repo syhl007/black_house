@@ -2,7 +2,8 @@ import random
 
 from card import Map
 from constant import room_card_set, game_map
-from util import draw_card, room_search, user_input, ahead_one, backward_one
+from sign_function import sign_func_dict
+from util import draw_card, room_search, user_input, ahead_one, backward_one, set_room
 
 
 # 房间卡基类
@@ -15,6 +16,8 @@ class RoomCard:
         self.describtion = describtion
         self.item_type = item_type
         self.floor = floor
+        self.x = None
+        self.y = None
         self.used = False
         self.sign = []
         self.creatures = []
@@ -69,14 +72,17 @@ class RoomCard:
     def use(self, role):
         signs = self.get_sign(role)
         for key in signs:
-            print(key)
+            func = sign_func_dict.get(key)
+            if func(role=role, room=self):
+                self.get_sign(role).remove(key)
             pass
 
 
 # 隔断房间基类
 class PartitionRoom(RoomCard):
     def __init__(self, name, door, window, card_img, describtion, item_type, floor):
-        super(PartitionRoom, self).__init__(name, [x*9 for x in door], window, card_img, describtion, item_type, floor)
+        super(PartitionRoom, self).__init__(name, [x * 9 for x in door], window, card_img, describtion, item_type,
+                                            floor)
         self.sign = [['隔断'], ['隔断']]
         self.creatures = [[], []]
         self.omens = [[], []]
@@ -105,14 +111,13 @@ class PartitionRoom(RoomCard):
         else:
             return self.challenge(role)
 
-    def challenge(self,role):
+    def challenge(self, role):
         return False
 
     def into(self, role, direction=None):
         self.creatures[[0, 0, 1, 1][direction]].append(role)
         role.room = self
         print(role.name, "进入了", self.name)
-
 
     def leave(self, role):
         for l in self.creatures:
@@ -186,16 +191,18 @@ class Collapse(RoomCard):
                 print('你一脚踩空，下落到地下室随机地点')
                 role.hurt(type='肉体')
                 role.floor = 0
-                role.x = random.randint(0, 4)
-                role.y = random.randint(0, 4)
-                if game_map[0].map[role.x][role.y] is None:
-                    new_room = role.explore(direction=random.randint(0, 3))
-                    game_map[0].map[role.x][role.y] = new_room
-                else:
-                    new_room = game_map[0].map[role.x][role.y]
+                x = random.randint(0, 4)
+                y = random.randint(0, 4)
+                if game_map[0].map[x][y] is None:
+                    set_room(role.explore(direction=random.randint(0, 3)), role.floor, x, y)
+                new_room = game_map[0].map[x][y]
                 self.leave(role)
-                new_room.into(role)
-                new_room.sign.append("崩塌的房间")
+                if isinstance(new_room, PartitionRoom):
+                    new_room.into(role, direction=random.randint(0, 3))
+                    new_room.get_sign(role).append("崩塌的房间")
+                else:
+                    new_room.sign.append("崩塌的房间")
+                    new_room.into(role)
             self.force = False
 
     def use(self, role):
@@ -204,22 +211,23 @@ class Collapse(RoomCard):
         role.hurt(type='肉体')
         room_list = room_search(sign='崩塌的房间', floor=0)
         if len(room_list) == 0:
+            role.hurt(type='肉体')
             role.floor = 0
-            role.x = random.randint(0, 4)
-            role.y = random.randint(0, 4)
-            if game_map[0].map[role.x][role.y] is None:
-                new_room = role.explore()
-                game_map[0].map[role.x][role.y] = new_room
-            else:
-                new_room = game_map[0].map[role.x][role.y]
+            x = random.randint(0, 4)
+            y = random.randint(0, 4)
+            if game_map[0].map[x][y] is None:
+                set_room(role.explore(direction=random.randint(0, 3)), role.floor, x, y)
+            new_room = game_map[0].map[x][y]
             self.leave(role)
-            new_room.into(role)
-            new_room.sign.append("崩塌的房间")
+            if isinstance(new_room, PartitionRoom):
+                new_room.into(role, direction=random.randint(0, 3))
+                new_room.get_sign(role).append("崩塌的房间")
+            else:
+                new_room.sign.append("崩塌的房间")
+                new_room.into(role)
         else:
             new_room = room_list[0]
             role.floor = new_room.get('floor')
-            role.x = new_room.get('x')
-            role.y = new_room.get('y')
             self.leave(role)
             new_room.get('room').into(role)
 
@@ -578,10 +586,10 @@ class Lake(RoomCard):
             print('你一脚踩空，下落到一片冰冷的湖水中')
             role.floor = 0
             while True:
-                role.x = random.randint(0, 4)
-                role.y = random.randint(0, 4)
-                if game_map[0].map[role.x][role.y] is None:
-                    game_map[0].map[role.x][role.y] = self
+                x = random.randint(0, 4)
+                y = random.randint(0, 4)
+                if game_map[0].map[x][y] is None:
+                    set_room(self, 0, x, y)
                     break
             role.room = self
         self.force = False
@@ -625,6 +633,8 @@ class Balcony(RoomCard):
 
     def use(self, role):
         if ballroom in room_card_set:
+            pass
+        else:
             role.hurt(type='肉体')
 
 
@@ -834,7 +844,6 @@ class Tower(PartitionRoom):
             return True
         else:
             print('太沉了，看来你只能停下另找他路')
-            role.move = 0
             return False
 
 
@@ -849,7 +858,7 @@ class Crack(PartitionRoom):
                                     item_type=None,
                                     describtion=None)
 
-    def challenge(self,role):
+    def challenge(self, role):
         super(Crack, self).challenge(role)
         print("若要从这里通过，需要以'速度'进行'能力挑战'，骰数大于等于3，则成功；否则停止移动。")
         print('破碎的索桥摇摇晃晃，要通过这里，可能需要一些速度的技巧')
@@ -864,9 +873,7 @@ class Crack(PartitionRoom):
             return True
         else:
             print('你差点一脚踩空，看来，你只能停下另寻他路了')
-            role.move = 0
             return False
-
 
 
 # ------------------------------------陵墓------------------------------------
@@ -893,9 +900,7 @@ class Mausoleum(PartitionRoom):
             return True
         else:
             print('你的双腿不受自己的控制，无法行动')
-            role.move = 0
             return False
-
 
 
 # ------------------------------------升降梯------------------------------------
@@ -1054,13 +1059,14 @@ def room_init():
 
 # 地图初始化
 underground = Map(floor=0)
-underground.map[4][4] = down_steps
 game_map.append(underground)
 ground = Map(floor=1)
-ground.map[4][7] = staircase_0
-ground.map[4][8] = lobby_1
-ground.map[4][9] = lobby_0
 game_map.append(ground)
 overground = Map(floor=2)
-overground.map[4][4] = up_steps
 game_map.append(overground)
+underground.map[4][4] = down_steps
+set_room(down_steps, 0, 4, 4)
+set_room(staircase, 1, 4, 7)
+set_room(lobby_1, 1, 4, 8)
+set_room(lobby_0, 1, 4, 9)
+set_room(up_steps, 2, 4, 4)
