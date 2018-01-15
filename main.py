@@ -20,8 +20,14 @@ class Main:
                   know=5, know_strip=[0, 1, 3, 3, 5, 6, 6, 7],
                   speed=2, speed_strip=[0, 3, 4, 4, 4, 5, 6, 7, 8])
         role_list.append(bj)
-        bj.room = lobby_0
-        lobby_0.creatures.append(bj)
+        lobby_0.into(bj)
+        emey = Role(name='你的死敌',
+                  san=5, san_strip=[0, 3, 3, 3, 4, 5, 6, 7, 8],
+                  power=5, power_strip=[0, 2, 3, 3, 4, 5, 6, 6, 7],
+                  know=5, know_strip=[0, 1, 3, 3, 5, 6, 6, 7],
+                  speed=5, speed_strip=[0, 3, 4, 4, 4, 5, 6, 7, 8])
+        emey.camp = -999
+        lobby_0.into(emey)
         print("基本操作：i、查看物品|o、查看预兆列表|b、查看buff|f、房屋互动")
         while True:
             try:
@@ -56,6 +62,17 @@ class Main:
                     print("[预兆栏]:", bj.get_omens_list())
                 if inp == "b":
                     print("[buff]:", bj.get_buff_list())
+                if inp == "a":
+                    l = [r for r in bj.room.get_creatures(bj) if r != bj]
+                    print(l)
+                    index = int(user_input())
+                    tar = l[index]
+                    print(tar)
+                    l = bj.get_weapon_list()
+                    print(l)
+                    index = int(user_input())
+                    arms = l[index]
+                    bj.attack(target=tar, arms=arms)
                 if inp == "f":
                     bj.room.use(bj)
             except Exception as e:

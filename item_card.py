@@ -3,10 +3,11 @@ from constant import game_map, item_card_set
 
 # 道具
 class Item:
-    def __init__(self, name, card_img, is_use=True, is_steal=True, is_discard=True, is_give=True):
+    def __init__(self, name, card_img, is_weapen=False, is_use=True, is_steal=True, is_discard=True, is_give=True):
         self.name = name
         self.card_img = card_img
         self.owner = None
+        self.is_weapen = is_weapen
         self.is_use = is_use
         self.is_steal = is_steal
         self.is_discard = is_discard
@@ -55,7 +56,7 @@ from util import challenge
 
 
 class BloodSword(Item):
-    def __init__(self):
+    def __init__(self, is_weapen=True):
         super(BloodSword, self).__init__(name="血剑", card_img=None)
 
     def use(self):

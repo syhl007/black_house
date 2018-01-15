@@ -47,6 +47,9 @@ class Role:
         self.goal = '失忆中....'
         self.first_move = True
 
+    def __repr__(self):
+        return self.name
+
     # 骰点
     def dice(self, min=0, max=2, n=1):
         res = [random.randint(min, max) for i in range(n)]
@@ -253,11 +256,14 @@ class Role:
         self.struggle(name="丝网", ability="力量", goal=4)
         # 瓦砾判断
         self.struggle(name="瓦砾", ability="力量", goal=4)
+        # 敌对干扰判断
         enemy = len([x for x in self.room.get_creatures(self) if x.camp != self.camp])
         self.move_bar -= enemy
+        # 首次移动判断
         if not self.first_move and self.move_bar <= 0:
             print("行动力不足")
             return
+        # 房间门判断
         if self.room.door[direction] >= 1:
             if self.room.door[direction] == 9:
                 if not self.room.across(self, direction):
@@ -305,13 +311,22 @@ class Role:
             new_room.into(role=self, direction=direction)
 
     # 获得道具/预兆
-    def get_obj(self, obj):
+    def gain_obj(self, obj):
         if isinstance(obj, Item):
             self.items.append(obj)
             obj.set_owner(self)
         elif isinstance(obj, Omen):
             self.omens.append(obj)
             obj.set_owner(self)
+
+    # 丢失道具
+    def lost_obj(self, obj):
+        if isinstance(obj, Item):
+            self.items.remove(obj)
+            obj.lost()
+        elif isinstance(obj, Omen):
+            self.omens.remove(obj)
+            obj.lost()
 
     # 探险
     def explore(self, direction):
@@ -325,7 +340,7 @@ class Role:
 
     # 袭击
     def attack(self, target, ability='力量', n=0, arms=None):
-        if arms != None:
+        if arms is None and arms != "空手":
             return arms.use()
         else:
             num = self.get(ability=ability) + n
@@ -335,7 +350,8 @@ class Role:
             res1 = {'ability': ability, 'result': self.dice(n=num)}
             print("[进攻]", res1)
             if target.get(ability=ability) is None:
-                raise Exception()
+                print(self.name, "的攻击对目标没有任何效果。")
+                return
             res2 = target.counter(ability=ability)
             print("[防守]", res2)
             diff = sum(res1.get('result')) - sum(res2.get('result'))
@@ -344,21 +360,45 @@ class Role:
             else:
                 type = '精神'
             if diff >= 0:
+                print(self.name, "攻击成功，造成", diff, "点伤害。")
                 if diff > 2:
-                    if user_input():
-                        return target.steal_list()
+                    print(self.name, "的攻击让", target.name, "失去平衡。")
+                    print("你可以选择放弃伤害值，转为偷窃目标一件道具")
+                    print("（注意：若目标无可被偷窃的道具，则无效。）")
+                    if user_input() == "y":
+                        l = target.get_items_list(type="偷窃")
+                        print(l)
+                        index = int(user_input())
+                        item = l[index]
+                        target.lost_obj(item)
+                        self.gain_obj(item)
+                        return
                 target.hurt(type=type, value=diff)
             elif diff < 0:
+                print(target.name, "反击成功，造成", abs(diff), "点伤害。")
                 if diff < -2:
-                    if user_input():
-                        return self.steal_list()
-                self.hurt(type=type, value=diff)
-            return res1
+                    print(target.name, "的反击让", self.name, "失去平衡。")
+                    print("你可以选择放弃伤害值，转为偷窃目标一件道具")
+                    print("（注意：若目标无可被偷窃的道具，则无效。）")
+                    if user_input() == "y":
+                        l = self.get_items_list(type="偷窃")
+                        print(l)
+                        index = int(user_input())
+                        item = l[index]
+                        target.lost_obj(item)
+                        self.gain_obj(item)
+                        return
+                self.hurt(type=type, value=abs(diff))
+            return
 
     # 反击
     def counter(self, ability='力量'):
         res = {'ability': ability, 'result': self.dice(n=self.get(ability=ability))}
         return res
+
+    # 武器列表
+    def get_weapon_list(self):
+        return ["空手"] + [x for x in self.items if x.is_weapon] + [x for x in self.omens if x.is_weapon]
 
     # 物品列表
     def get_items_list(self, type=None):
@@ -422,3 +462,11 @@ class Role:
         self.room.items += self.items
         self.room.otems += self.omens
         self.events = []
+
+    def __str__(self):
+        dict = {"基础属性": {"人物名称": self.name, "力量": self.get(ability="力量"), "速度": self.get(ability="速度"),
+                         "知识": self.get(ability="知识"), "意志": self.get(ability="意志")},
+                "物品列表": self.get_items_list(),
+                "预兆列表": self.get_omens_list(),
+                "buff列表": self.get_buff_list()}
+        return json.dumps(dict, ensure_ascii=False)
