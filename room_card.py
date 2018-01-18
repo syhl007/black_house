@@ -38,7 +38,7 @@ class RoomCard:
             self.door = backward_one(self.door)
             self.window = backward_one(self.window)
 
-    def get_creatures(self, role):
+    def get_creatures(self, role=None):
         return self.creatures
 
     def get_sign(self, role):
@@ -94,7 +94,7 @@ class PartitionRoom(RoomCard):
         else:
             return 1
 
-    def get_creatures(self, role):
+    def get_creatures(self, role=None):
         if role is None:
             return self.creatures[0] + self.creatures[1]
         index = self.__get_role_pos(role)
@@ -141,6 +141,7 @@ up_steps = RoomCard(name='上台阶',
                     item_type=None,
                     floor=2,
                     describtion=None)
+up_steps.sign.append("下楼")
 
 # ------------------------------------大厅楼梯间------------------------------------
 staircase_0 = RoomCard(name='大厅楼梯间',
@@ -150,6 +151,8 @@ staircase_0 = RoomCard(name='大厅楼梯间',
                        item_type=None,
                        floor=1,
                        describtion=None)
+staircase_0.sign.append("上楼")
+
 # ------------------------------------大厅1------------------------------------
 lobby_1 = RoomCard(name='大厅1',
                    door=[1, 1, 1, 1],
@@ -166,6 +169,27 @@ lobby_0 = RoomCard(name='大厅0',
                    item_type=None,
                    floor=1,
                    describtion=None)
+
+
+# ------------------------------------设置上下楼梯------------------------------------
+def up2overground(self, *args, **kwargs):
+    role = kwargs.get('role')
+    self.leave(role)
+    role.floor = 2
+    up_steps.into(role)
+
+
+def back2ground(self, *args, **kwargs):
+    role = kwargs.get('role')
+    self.leave(role)
+    role.floor = 1
+    staircase_0.into(role)
+
+
+from types import MethodType
+
+staircase_0.use = MethodType(up2overground, staircase_0)
+up_steps.use = MethodType(back2ground, up_steps)
 
 
 # ------------------------------------崩塌的房间------------------------------------
@@ -249,8 +273,7 @@ class Chute(RoomCard):
         self.leave(role)
         down_steps.into(role)
         role.floor = 0
-        role.x = 4
-        role.y = 4
+        down_steps.into(role)
 
     def stay(self, role):
         super(Chute, self).stay(role)
@@ -258,8 +281,7 @@ class Chute(RoomCard):
         self.leave(role)
         down_steps.into(role)
         role.floor = 0
-        role.x = 4
-        role.y = 4
+        down_steps.into(role)
 
 
 # ------------------------------------舞厅------------------------------------
@@ -688,8 +710,8 @@ class Staircase(RoomCard):
     def use(self, role):
         print("地下楼梯永远连接到门厅")
         role.floor = 1
-        role.x = [2]
-        role.y = [2]
+        self.leave(role)
+        lobby_0.into(role)
 
 
 # ------------------------------------五芒星阵------------------------------------
@@ -1066,7 +1088,7 @@ overground = Map(floor=2)
 game_map.append(overground)
 underground.map[4][4] = down_steps
 set_room(down_steps, 0, 4, 4)
-set_room(staircase, 1, 4, 7)
+set_room(staircase_0, 1, 4, 7)
 set_room(lobby_1, 1, 4, 8)
 set_room(lobby_0, 1, 4, 9)
 set_room(up_steps, 2, 4, 4)

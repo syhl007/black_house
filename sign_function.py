@@ -18,7 +18,6 @@ def skeletons(*args, **kwargs):
         return False
 
 
-
 sign_func_dict = {
-    "骸骨": skeletons
+    "骸骨": skeletons,
 }

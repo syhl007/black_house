@@ -1,9 +1,7 @@
-import json
-import random
-
 from constant import game_map, item_card_set, event_card_set
 
 # 玩家输入
+from item_card import gun
 from omen_card import omen_card_set
 
 
@@ -25,85 +23,85 @@ def backward_one(l):
     return l
 
 
-# 行动
-def action(role, act, room_set, map, first=False, direction=None):
-    room = map[role.x][role.y]
-    if act.startswith("移动"):
-        if role.move <= 0 and first:
-            role.move = 1
-        if role.move <= 0:
-            print('行动力不足')
-            return
-        if room.door[direction] == 0:
-            print("没门")
-        else:
-            if act.endswith('经过'):
-                role.passaway(room)
-            x = role.x
-            y = role.y
-            if direction == 0:
-                y = role.y - 1
-            elif direction == 1:
-                x = role.x + 1
-            elif direction == 2:
-                y = role.y + 1
-            elif direction == 3:
-                x = role.x - 1
-            try:
-                next_room = map[x][y]
-            except:
-                print('移动失败')
-                raise Exception()
-            role.move -= 1
-            if next_room is not None:
-                role.x = x
-                role.y = y
-                role.leave(room)
-                role.into(next_room)
+# 枪械远程袭击
+def gun_check(x, y, floor, direction=None, ):
+    l = []
+    room = game_map[floor].map[x][y]
+    if room is None:
+        return list
+    if direction is None:
+        for d in range(4):
+            if room.door[d] == 0:
+                continue
             else:
-                print('你打开了一扇通向未知区域的门')
-                next_room = role.explore(room_set)
-                return next_room
-    elif act == "互动":
-        role.use(room)
-    elif act == "挑战":
-        role.challenge(room)
-    elif act == "停留":
-        role.stay(room)
-        role.recover()
-
-
-# 挑战
-def challenge(role, ability, goal=0):
-    res = role.ability_challenge(ability=ability)
-
-
-# 偷窃
-def steal(winner, loser, item):
-    if winner.floor == loser.floor and winner.x == loser.x and winner.y == loser.y and item in loser.items:
-        item.lose()
-        item.set_owner(winner)
-        return True
+                try:
+                    new_x = x + [0, 1, 0, -1][d]
+                    new_y = y + [-1, 0, 1, 0][d]
+                    new_room = game_map[floor].map[new_x][new_y]
+                    if new_room.door[[2, 3, 0, 1][d]] == 0:
+                        continue
+                    else:
+                        l += gun_check(new_x, new_y, floor, direction=d)
+                except Exception:
+                    continue
+        return l
     else:
-        return False
+        l += room.get_creatures()
+        try:
+            new_x = x + [0, 1, 0, -1][direction]
+            new_y = y + [-1, 0, 1, 0][direction]
+            new_room = game_map[floor].map[new_x][new_y]
+            if new_room.door[[2, 3, 0, 1][direction]] == 0:
+                return l
+            else:
+                return l + gun_check(new_x, new_y, floor, direction=direction)
+        except Exception:
+            return l
+
+
+# 脏狗判断
+def dog_check(x, y, floor, n=6, direction=None):
+    l = []
+    room = game_map[floor].map[x][y]
+    l.append(room)
+    directions = [0, 1, 2, 3]
+    if direction is not None:
+        directions.remove([2, 3, 0, 1][direction])
+    for d in directions:
+        if room.door[d] == 0:
+            continue
+        else:
+            try:
+                new_x = x + [0, 1, 0, -1][d]
+                new_y = y + [-1, 0, 1, 0][d]
+                new_room = game_map[floor].map[new_x][new_y]
+                if new_room.door[[2, 3, 0, 1][d]] == 0:
+                    continue
+                else:
+                    n -= 1
+                    if n < 0:
+                        return l
+                    else:
+                        return l + dog_check(new_x, new_y, floor, n=n, direction=d)
+            except Exception:
+                continue
+    return l
 
 
 # 袭击
-def attack(attacker, retaliator, arms=None):
-    if arms is not None and arms not in attacker.items:
-        return
-    if arms is None:
-        a = attacker.combat()
-    else:
-        a = arms.use()
-    ability = a.get('ability')
-    b = retaliator.combat(ability=ability)
-    res_a = sum(a.get('result'))
-    res_b = sum(b.get('result'))
-    if res_a > res_b:
-        return True
-    else:
-        return False
+def attack(attacker):
+    l = attacker.get_weapon_list()
+    print(l)
+    index = int(user_input())
+    arms = l[index]
+    l = [r for r in attacker.room.get_creatures(attacker) if r != attacker]
+    if arms == gun:
+        l2 = gun_check
+        print(l2)
+    index = int(user_input())
+    tar = l[index]
+    print(tar)
+    None.attack(target=tar, arms=arms)
 
 
 # 抽卡

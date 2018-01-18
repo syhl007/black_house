@@ -2,7 +2,7 @@ from card import *
 from constant import role_list
 from event_card import event_init
 from omen_card import omen_init
-from room_card import lobby_0, room_init
+from room_card import lobby_0, room_init, lobby_1, staircase_0
 from util import *
 
 
@@ -28,6 +28,9 @@ class Main:
                   speed=5, speed_strip=[0, 3, 4, 4, 4, 5, 6, 7, 8])
         emey.camp = -999
         lobby_0.into(emey)
+        lobby_1.into(emey)
+        staircase_0.into(emey)
+        print(dog_check(bj.room.x,bj.room.y,bj.floor))
         print("基本操作：i、查看物品|o、查看预兆列表|b、查看buff|f、房屋互动")
         while True:
             try:
@@ -62,19 +65,19 @@ class Main:
                     print("[预兆栏]:", bj.get_omens_list())
                 if inp == "b":
                     print("[buff]:", bj.get_buff_list())
-                if inp == "a":
+                if inp == "a":  # 袭击
+                    l = bj.get_weapon_list()
+                    print(l)
+                    index = int(user_input())
+                    arms = l[index]
                     l = [r for r in bj.room.get_creatures(bj) if r != bj]
                     print(l)
                     index = int(user_input())
                     tar = l[index]
                     print(tar)
-                    l = bj.get_weapon_list()
-                    print(l)
-                    index = int(user_input())
-                    arms = l[index]
                     bj.attack(target=tar, arms=arms)
                 if inp == "f":
-                    bj.room.use(bj)
+                    bj.room.use(role=bj)
             except Exception as e:
                 print(e.args)
                 # continue

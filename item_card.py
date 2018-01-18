@@ -52,7 +52,6 @@ class Item:
 
 
 # ------------------------------------血剑------------------------------------
-from util import challenge
 
 
 class BloodSword(Item):
@@ -298,7 +297,8 @@ class MagicBox(Item):
         super(MagicBox, self).__init__(name="魔术盒子", card_img=None)
 
     def use(self):
-        if challenge(self.owner, ability='知识', goal=6):
+        res = self.owner.ability_challenge(ability='知识', type="物品")
+        if sum(res) >= 6:
             pass
         else:
             pass
