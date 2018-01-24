@@ -1,9 +1,10 @@
 import random
 
 from card import Map
-from constant import room_card_set, game_map
+import constant
+from script import get_truth
 from sign_function import sign_func_dict
-from util import draw_card, room_search, user_input, ahead_one, backward_one, set_room
+from util import draw_card, room_search, ahead_one, backward_one, set_room, haunt_roll
 
 
 # 房间卡基类
@@ -57,6 +58,13 @@ class RoomCard:
             elif self.item_type == '预兆':
                 print(role.name, "找到了", card.name, "[预兆]")
                 role.omens.append(card)
+                if constant.game_schedule < 1:
+                    if haunt_roll(role):
+                        constant.game_schedule = 1
+                        print(role.name, "揭示了真相")
+                        get_truth(role,card)
+                    else:
+                        print("真相依然在迷雾之中。。。")
             elif self.item_type == '物品':
                 print(role.name, "找到了", card.name, "[物品]")
                 role.items.append(card)
@@ -217,9 +225,9 @@ class Collapse(RoomCard):
                 role.floor = 0
                 x = random.randint(0, 4)
                 y = random.randint(0, 4)
-                if game_map[0].map[x][y] is None:
+                if constant.game_map[0].map[x][y] is None:
                     set_room(role.explore(direction=random.randint(0, 3)), role.floor, x, y)
-                new_room = game_map[0].map[x][y]
+                new_room = constant.game_map[0].map[x][y]
                 self.leave(role)
                 if isinstance(new_room, PartitionRoom):
                     new_room.into(role, direction=random.randint(0, 3))
@@ -239,9 +247,9 @@ class Collapse(RoomCard):
             role.floor = 0
             x = random.randint(0, 4)
             y = random.randint(0, 4)
-            if game_map[0].map[x][y] is None:
+            if constant.game_map[0].map[x][y] is None:
                 set_room(role.explore(direction=random.randint(0, 3)), role.floor, x, y)
-            new_room = game_map[0].map[x][y]
+            new_room = constant.game_map[0].map[x][y]
             self.leave(role)
             if isinstance(new_room, PartitionRoom):
                 new_room.into(role, direction=random.randint(0, 3))
@@ -610,7 +618,7 @@ class Lake(RoomCard):
             while True:
                 x = random.randint(0, 4)
                 y = random.randint(0, 4)
-                if game_map[0].map[x][y] is None:
+                if constant.game_map[0].map[x][y] is None:
                     set_room(self, 0, x, y)
                     break
             role.room = self
@@ -654,7 +662,7 @@ class Balcony(RoomCard):
         self.detail = "如果'舞厅'已放置，则可以选择从这里跳至'舞厅'，骰1作为肉体伤害"
 
     def use(self, role):
-        if ballroom in room_card_set:
+        if ballroom in constant.room_card_set:
             pass
         else:
             role.hurt(type='肉体')
@@ -948,9 +956,9 @@ class Elevator(RoomCard):
                 x = int(input('x:'))
                 y = int(input('y:'))
                 if 0 <= floor <= 2 and 0 <= x < 5 and 0 <= y < 5:
-                    new_room = game_map[floor].map[x][y]
+                    new_room = constant.game_map[floor].map[x][y]
                     if new_room is None:
-                        game_map[floor].map[x][y] = self
+                        constant.game_map[floor].map[x][y] = self
                         break
                     else:
                         print("格子被占用")
@@ -961,27 +969,27 @@ class Elevator(RoomCard):
             while True:
                 x = random.randint(0, 4)
                 y = random.randint(0, 4)
-                new_room = game_map[2].map[x][y]
+                new_room = constant.game_map[2].map[x][y]
                 if new_room is None:
-                    game_map[2].map[x][y] = self
+                    constant.game_map[2].map[x][y] = self
                     break
         elif sum(res) == 2:
             print('房间移动了')
             while True:
                 x = random.randint(0, 4)
                 y = random.randint(0, 4)
-                new_room = game_map[1].map[x][y]
+                new_room = constant.game_map[1].map[x][y]
                 if new_room is None:
-                    game_map[1].map[x][y] = self
+                    constant.game_map[1].map[x][y] = self
                     break
         elif sum(res) == 1:
             print('房间移动了')
             while True:
                 x = random.randint(0, 4)
                 y = random.randint(0, 4)
-                new_room = game_map[0].map[x][y]
+                new_room = constant.game_map[0].map[x][y]
                 if new_room is None:
-                    game_map[0].map[x][y] = self
+                    constant.game_map[0].map[x][y] = self
                     break
         else:
             print('房间剧烈震动，房间内的人物受伤了')
@@ -1033,59 +1041,59 @@ elevator = Elevator()
 
 
 def room_init():
-    room_card_set.append(collapse)
-    room_card_set.append(chute)
-    room_card_set.append(ballroom)
-    room_card_set.append(broken)
-    room_card_set.append(wine)
-    room_card_set.append(store)
-    room_card_set.append(vault)
-    room_card_set.append(old_porch)
-    room_card_set.append(organ_room)
-    room_card_set.append(research_room)
-    room_card_set.append(master_bedroom)
-    room_card_set.append(restaurant)
-    room_card_set.append(libry)
-    room_card_set.append(gallery)
-    room_card_set.append(kitchen)
-    room_card_set.append(cellar)
-    room_card_set.append(loft)
-    room_card_set.append(church)
-    room_card_set.append(bedroom)
-    room_card_set.append(terrace)
-    room_card_set.append(graveyard)
-    room_card_set.append(operation_room)
-    room_card_set.append(lake)
-    room_card_set.append(blood_room)
-    room_card_set.append(maid_room)
-    room_card_set.append(balcony)
-    room_card_set.append(game_room)
-    room_card_set.append(black_room)
-    room_card_set.append(porch)
-    room_card_set.append(staircase)
-    room_card_set.append(pentacle)
-    room_card_set.append(waste_room)
-    room_card_set.append(yard)
-    room_card_set.append(courtyard)
-    room_card_set.append(stove_room)
-    room_card_set.append(food_storeroom)
-    room_card_set.append(greenroom)
-    room_card_set.append(gym)
-    room_card_set.append(tower)
-    room_card_set.append(crack)
-    room_card_set.append(mausoleum)
-    room_card_set.append(elevator)
+    constant.room_card_set.append(collapse)
+    constant.room_card_set.append(chute)
+    constant.room_card_set.append(ballroom)
+    constant.room_card_set.append(broken)
+    constant.room_card_set.append(wine)
+    constant.room_card_set.append(store)
+    constant.room_card_set.append(vault)
+    constant.room_card_set.append(old_porch)
+    constant.room_card_set.append(organ_room)
+    constant.room_card_set.append(research_room)
+    constant.room_card_set.append(master_bedroom)
+    constant.room_card_set.append(restaurant)
+    constant.room_card_set.append(libry)
+    constant.room_card_set.append(gallery)
+    constant.room_card_set.append(kitchen)
+    constant.room_card_set.append(cellar)
+    constant.room_card_set.append(loft)
+    constant.room_card_set.append(church)
+    constant.room_card_set.append(bedroom)
+    constant.room_card_set.append(terrace)
+    constant.room_card_set.append(graveyard)
+    constant.room_card_set.append(operation_room)
+    constant.room_card_set.append(lake)
+    constant.room_card_set.append(blood_room)
+    constant.room_card_set.append(maid_room)
+    constant.room_card_set.append(balcony)
+    constant.room_card_set.append(game_room)
+    constant.room_card_set.append(black_room)
+    constant.room_card_set.append(porch)
+    constant.room_card_set.append(staircase)
+    constant.room_card_set.append(pentacle)
+    constant.room_card_set.append(waste_room)
+    constant.room_card_set.append(yard)
+    constant.room_card_set.append(courtyard)
+    constant.room_card_set.append(stove_room)
+    constant.room_card_set.append(food_storeroom)
+    constant.room_card_set.append(greenroom)
+    constant.room_card_set.append(gym)
+    constant.room_card_set.append(tower)
+    constant.room_card_set.append(crack)
+    constant.room_card_set.append(mausoleum)
+    constant.room_card_set.append(elevator)
     # 打乱
-    random.shuffle(room_card_set)
+    random.shuffle(constant.room_card_set)
 
 
 # 地图初始化
 underground = Map(floor=0)
-game_map.append(underground)
+constant.game_map.append(underground)
 ground = Map(floor=1)
-game_map.append(ground)
+constant.game_map.append(ground)
 overground = Map(floor=2)
-game_map.append(overground)
+constant.game_map.append(overground)
 underground.map[4][4] = down_steps
 set_room(down_steps, 0, 4, 4)
 set_room(staircase_0, 1, 4, 7)

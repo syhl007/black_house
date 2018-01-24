@@ -1,4 +1,4 @@
-from constant import game_map, item_card_set, event_card_set
+from constant import game_map, item_card_set, event_card_set, game_schedule
 
 # 玩家输入
 from item_card import gun
@@ -21,6 +21,16 @@ def backward_one(l):
     x = l.pop(0)
     l.append(x)
     return l
+
+
+# 揭示真相
+def haunt_roll(role):
+    if game_schedule < 1:
+        res = (13 - len(omen_card_set)) - sum(role.dice(n=6))
+        if res > 0:
+            return True
+        else:
+            return False
 
 
 # 枪械远程袭击
@@ -166,3 +176,4 @@ def live_map_cheak(floor=None):
                     count += 1
     return count
     pass
+

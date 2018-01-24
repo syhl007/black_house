@@ -1,13 +1,11 @@
 import json
 import random
 
-from constant import room_card_set, game_map
+from constant import room_card_set, game_map, game_schedule
 from item_card import Item
 from omen_card import Omen
 from util import user_input, live_map_cheak, set_room
 
-# 游戏进度
-game_schedule = 0
 
 
 class Map:

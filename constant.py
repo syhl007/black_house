@@ -1,3 +1,5 @@
+# 游戏进度
+game_schedule = 0
 # 地图版
 game_map = []
 # 房间卡堆
