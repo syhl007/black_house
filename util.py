@@ -26,8 +26,8 @@ def backward_one(l):
 # 揭示真相
 def haunt_roll(role):
     if game_schedule < 1:
-        res = (13 - len(omen_card_set)) - sum(role.dice(n=6))
-        if res > 0:
+        res = (13 - len(omen_card_set)) - sum(role.dice(n=999))
+        if res < 0:
             return True
         else:
             return False
@@ -147,12 +147,15 @@ def room_search(names=None, sign=None, floor=None):
                 room = game_map[i].map[x][y]
                 if room is None:
                     continue
-                if names is not None:
-                    if room.name in names:
-                        room_list.append({'x': x, 'y': y, 'floor': floor, 'room': room})
-                if sign is not None:
-                    if sign in room.sign:
-                        room_list.append({'x': x, 'y': y, 'floor': floor, 'room': room})
+                if names is None and sign is None:
+                    room_list.append({'x': x, 'y': y, 'floor': floor, 'room': room})
+                else:
+                    if names is not None:
+                        if room.name in names:
+                            room_list.append({'x': x, 'y': y, 'floor': floor, 'room': room})
+                    if sign is not None:
+                        if sign in room.sign:
+                            room_list.append({'x': x, 'y': y, 'floor': floor, 'room': room})
     return room_list
 
 

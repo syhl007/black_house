@@ -5,7 +5,7 @@ from constant import omen_card_set
 
 # 预兆
 class Omen:
-    def __init__(self, name, card_img, is_use=True, is_steal=True, is_discard=True, is_give=True):
+    def __init__(self, name, card_img, is_weapen=False, is_use=True, is_steal=True, is_discard=True, is_give=True):
         self.name = name
         self.card_img = card_img
         self.owner = None
@@ -124,7 +124,7 @@ class Rune(Omen):
 # -------------------------------指环-------------------------------------
 class Ring(Omen):
     def __init__(self):
-        super(Ring, self).__init__(name="指环", card_img=None)
+        super(Ring, self).__init__(name="指环", is_weapen=True, card_img=None)
 
     def use(self):
         self.owner.combat(ability='意志', n=0)
@@ -199,7 +199,7 @@ class SpiritBoard(Omen):
 # -------------------------------长矛-------------------------------------
 class Spear(Omen):
     def __init__(self):
-        super(Spear, self).__init__(name="长矛", card_img=None)
+        super(Spear, self).__init__(name="长矛", is_weapen=True, card_img=None)
 
     def use(self):
         self.owner.combat(ability='力量', n=2)

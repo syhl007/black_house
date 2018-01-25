@@ -2,6 +2,8 @@ import random
 
 from card import Map
 import constant
+from monsters import Monster
+from omen_card import girl, dog, crazy
 from script import get_truth
 from sign_function import sign_func_dict
 from util import draw_card, room_search, ahead_one, backward_one, set_room, haunt_roll
@@ -49,6 +51,17 @@ class RoomCard:
         print(role.name, "进入了", self.name)
         role.room = self
         self.creatures.append(role)
+        if isinstance(role, Monster):
+            return
+        if girl in self.omens:
+            role.gain_obj(girl)
+            self.omens.remove(girl)
+        if dog in self.omens:
+            role.gain_obj(dog)
+            self.omens.remove(dog)
+        if crazy in self.omens:
+            role.gain_obj(crazy)
+            self.omens.remove(crazy)
         if self.item_type is not None and not self.used:
             card = draw_card(self.item_type)
             if self.item_type == '事件':
@@ -57,27 +70,42 @@ class RoomCard:
                 role.events.append(card)
             elif self.item_type == '预兆':
                 print(role.name, "找到了", card.name, "[预兆]")
-                role.omens.append(card)
+                role.gain_obj(card)
                 if constant.game_schedule < 1:
                     if haunt_roll(role):
                         constant.game_schedule = 1
                         print(role.name, "揭示了真相")
-                        get_truth(role,card)
+                        get_truth(role, card)
                     else:
                         print("真相依然在迷雾之中。。。")
             elif self.item_type == '物品':
                 print(role.name, "找到了", card.name, "[物品]")
-                role.items.append(card)
+                role.gain_obj(card)
             self.used = True
 
     def stay(self, role):
+        if isinstance(role, Monster):
+            return
         pass
 
     def leave(self, role):
+        if girl in self.omens:
+            role.gain_obj(girl)
+            self.omens.remove(girl)
+        if dog in self.omens:
+            role.gain_obj(dog)
+            self.omens.remove(dog)
+        if crazy in self.omens:
+            role.gain_obj(crazy)
+            self.omens.remove(crazy)
         role.room = None
         self.creatures.remove(role)
+        if isinstance(role, Monster):
+            return
 
     def use(self, role):
+        if isinstance(role, Monster):
+            return
         signs = self.get_sign(role)
         for key in signs:
             func = sign_func_dict.get(key)
@@ -113,6 +141,8 @@ class PartitionRoom(RoomCard):
         return self.sign[index]
 
     def across(self, role, direction):
+        if isinstance(role, Monster):
+            return True
         index = self.__get_role_pos(role)
         if (direction in (2, 3) and index == 0) or (direction in (0, 1) and index == 1):
             return True
@@ -614,6 +644,7 @@ class Lake(RoomCard):
         if self.force:
             print("进入时直接落入湖水中，随机落到地下空白位置")
             print('你一脚踩空，下落到一片冰冷的湖水中')
+            constant.game_map[role.floor].map[role.room.x][role.room.y] = None
             role.floor = 0
             while True:
                 x = random.randint(0, 4)

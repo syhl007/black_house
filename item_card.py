@@ -311,7 +311,7 @@ item_card_set.append(magic_box)
 # -------------------------------左轮手枪-------------------------------------
 class Gun(Item):
     def __init__(self):
-        super(Gun, self).__init__(name="左轮手枪", card_img=None)
+        super(Gun, self).__init__(name="左轮手枪", is_weapen=True, card_img=None)
 
     def use(self):
         self.owner.attack(ability='速度', n=1)

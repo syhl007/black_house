@@ -1,5 +1,5 @@
+import constant
 from card import *
-from constant import role_list
 from event_card import event_init
 from omen_card import omen_init
 from room_card import lobby_0, room_init, lobby_1, staircase_0
@@ -19,14 +19,14 @@ class Main:
                   power=5, power_strip=[0, 2, 3, 3, 4, 5, 6, 6, 7],
                   know=5, know_strip=[0, 1, 3, 3, 5, 6, 6, 7],
                   speed=2, speed_strip=[0, 3, 4, 4, 4, 5, 6, 7, 8])
-        role_list.append(bj)
+        constant.role_list.append(bj)
         lobby_0.into(bj)
         emey = Role(name='你的死敌',
                   san=5, san_strip=[0, 3, 3, 3, 4, 5, 6, 7, 8],
                   power=5, power_strip=[0, 2, 3, 3, 4, 5, 6, 6, 7],
                   know=5, know_strip=[0, 1, 3, 3, 5, 6, 6, 7],
                   speed=5, speed_strip=[0, 3, 4, 4, 4, 5, 6, 7, 8])
-        emey.camp = -999
+        emey.camp = -1
         lobby_0.into(emey)
         lobby_1.into(emey)
         staircase_0.into(emey)
@@ -53,19 +53,25 @@ class Main:
                     print("方向：", dir_str)
                     try:
                         bj.move(direction=int(user_input()))
-                    except:
+                    except Exception as e:
+                        print(e)
                         continue
                 elif inp == "2":
                     bj.rest()
-                if inp == "r":
+                elif inp == "r":
                     print("[所在房间]:", bj.room)
-                if inp == "i":
+                elif inp == "i":
                     print("[物品栏]:", bj.get_items_list())
-                if inp == "o":
+                elif inp == "o":
                     print("[预兆栏]:", bj.get_omens_list())
-                if inp == "b":
+                elif inp == "b":
                     print("[buff]:", bj.get_buff_list())
-                if inp == "a":  # 袭击
+                elif inp == "s":
+                    print("[当前房间生物]:", bj.room.get_creatures())
+                elif inp == "t":
+                    r = room_search(floor=bj.floor)
+                    print("[当前楼层房间]:", r)
+                elif inp == "a":  # 袭击
                     l = bj.get_weapon_list()
                     print(l)
                     index = int(user_input())
@@ -76,7 +82,7 @@ class Main:
                     tar = l[index]
                     print(tar)
                     bj.attack(target=tar, arms=arms)
-                if inp == "f":
+                elif inp == "f":
                     bj.room.use(role=bj)
             except Exception as e:
                 print(e.args)

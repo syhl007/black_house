@@ -7,7 +7,6 @@ from omen_card import Omen
 from util import user_input, live_map_cheak, set_room
 
 
-
 class Map:
     def __init__(self, floor):
         self.floor = floor
@@ -65,6 +64,7 @@ class Role:
             if choose:
                 index = int(user_input())
                 res[index] = random.randint(0, 2)
+        print("[骰点结果为]", res)
         return res
 
     # 获取属性
@@ -171,6 +171,7 @@ class Role:
         else:
             res = [value]
         if type == '精神' and '颅骨' in self.buff:
+            print("你手上的颅骨闪烁着诡异的光芒，那些精神上的冲击似乎化作了实体伤害打在你的身上。")
             if bool(user_input()):
                 type = '肉体'
         # 铠甲判断
@@ -347,7 +348,7 @@ class Role:
                 num = 8
             res1 = {'ability': ability, 'result': self.dice(n=num)}
             print("[进攻]", res1)
-            if target.get(ability=ability) is None:
+            if target.counter(ability=ability) is None:
                 print(self.name, "的攻击对目标没有任何效果。")
                 return
             res2 = target.counter(ability=ability)
@@ -359,33 +360,35 @@ class Role:
                 type = '精神'
             if diff >= 0:
                 print(self.name, "攻击成功，造成", diff, "点伤害。")
-                if diff > 2:
+                if diff >= 2:
                     print(self.name, "的攻击让", target.name, "失去平衡。")
                     print("你可以选择放弃伤害值，转为偷窃目标一件道具")
                     print("（注意：若目标无可被偷窃的道具，则无效。）")
                     if user_input() == "y":
                         l = target.get_items_list(type="偷窃")
-                        print(l)
-                        index = int(user_input())
-                        item = l[index]
-                        target.lost_obj(item)
-                        self.gain_obj(item)
-                        return
+                        if l:
+                            print(l)
+                            index = int(user_input())
+                            item = l[index]
+                            target.lost_obj(item)
+                            self.gain_obj(item)
+                            return
                 target.hurt(type=type, value=diff)
             elif diff < 0:
                 print(target.name, "反击成功，造成", abs(diff), "点伤害。")
-                if diff < -2:
+                if diff <= -2:
                     print(target.name, "的反击让", self.name, "失去平衡。")
                     print("你可以选择放弃伤害值，转为偷窃目标一件道具")
                     print("（注意：若目标无可被偷窃的道具，则无效。）")
                     if user_input() == "y":
                         l = self.get_items_list(type="偷窃")
-                        print(l)
-                        index = int(user_input())
-                        item = l[index]
-                        target.lost_obj(item)
-                        self.gain_obj(item)
-                        return
+                        if l:
+                            print(l)
+                            index = int(user_input())
+                            item = l[index]
+                            self.lost_obj(item)
+                            target.gain_obj(item)
+                            return
                 self.hurt(type=type, value=abs(diff))
             return
 
