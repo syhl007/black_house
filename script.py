@@ -28,7 +28,7 @@ truth_table = pd.DataFrame([[18, 7, 12, 38, 1, 9, 45, 42, 49, 28, 34, 43, 48],
 # 真相表
 def get_truth(role, omen):
     num = truth_table[omen.name][role.room.name]
-    if num >= 0:
+    if num >= 0:    # 测试用
         role.room.sign.append("石棺")
         mummy = Mummy(floor=role.floor, room=role.room)
         role.room.into(mummy)

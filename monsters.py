@@ -165,7 +165,7 @@ class Mummy(Monster):
                         self.lost_obj(item)
                         target.gain_obj(item)
                         return
-            self.hurt(type=type, value=abs(diff))
+            self.hurt(type=type)
         return
 
     def counter(self, ability='力量'):
